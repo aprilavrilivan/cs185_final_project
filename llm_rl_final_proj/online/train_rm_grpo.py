@@ -207,11 +207,32 @@ def _compute_group_advantages(
     *,
     divide_by_std: bool,
 ) -> torch.Tensor:
-    del eps
     # TODO(student): compute one scalar advantage per sampled completion by grouping rewards
     # into prompt-wise batches of size `group_size`, subtracting the group mean, and optionally
     # dividing by the group standard deviation when `divide_by_std=True`.
-    raise NotImplementedError("Implement _compute_group_advantages in the student starter.")
+    if group_size <= 1:
+        return rewards.new_zeros(rewards.shape)
+    if rewards.numel() % group_size != 0:
+        raise ValueError(f"rewards length {rewards.numel()} is not divisible by group_size {group_size}")
+    
+    N = rewards.numel()  
+    num_groups = N // group_size
+    rewards_reshaped = rewards.reshape(num_groups, group_size)
+    means = rewards_reshaped.mean(dim=1, keepdim=True)
+    stds = rewards_reshaped.std(dim=1, keepdim=True, unbiased=False)
+    advantages = torch.zeros_like(rewards_reshaped)
+
+    if not divide_by_std:
+        advantages = (rewards_reshaped - means)
+        return advantages.reshape(-1)
+    
+    valid_groups = (stds.squeeze(1) > eps)
+    advantages[valid_groups] = (
+    (rewards_reshaped[valid_groups] - means[valid_groups])
+    / (stds[valid_groups] + eps))
+    
+    return advantages.reshape(-1)
+
 
 
 def _build_online_algo(cfg: OnlineRMGRPOConfig):
@@ -237,7 +258,11 @@ def _build_online_algo(cfg: OnlineRMGRPOConfig):
 def _algo_divides_advantages_by_std(algo: str) -> bool:
     # TODO(student): return True for the algorithms that use group-standard-deviation
     # normalization and False for the algorithms that intentionally avoid it.
-    raise NotImplementedError("Implement _algo_divides_advantages_by_std in the student starter.")
+    if algo == "grpo" or algo == "gspo":
+        return True
+    if algo == "dr_grpo":
+        return False
+    raise ValueError(f"Unknown online preference algo: {algo}. The student starter exposes only Part 1 algorithms by default. Add your Part 2 method here.")
 
 
 def _normalize_completion_for_reward_scoring(text: str) -> str:
