@@ -82,7 +82,6 @@ def compute_offline_preference_loss(
         ref_margin_sum = reference_scores.chosen_logp_sum - reference_scores.rejected_logp_sum
         # TODO(student): compute the reference-corrected DPO logits.
         # Hint: compare the policy margin against the frozen reference margin.
-        policy_margin_sum = policy_scores.chosen_logp_sum - policy_scores.rejected_logp_sum
         logits = policy_margin_sum - ref_margin_sum
         # TODO(student): replace this with the DPO logistic loss.
         losses = F.logsigmoid(logits * beta).mul(-1.0)
@@ -98,7 +97,6 @@ def compute_offline_preference_loss(
             raise ValueError("IPO requires reference scores.")
         ref_margin_sum = reference_scores.chosen_logp_sum - reference_scores.rejected_logp_sum
         # TODO(student): compute the reference-corrected IPO logits.
-        policy_margin_sum = policy_scores.chosen_logp_sum - policy_scores.rejected_logp_sum
         logits = policy_margin_sum - ref_margin_sum
         target_gap = 1.0 / (2.0 * beta)
         # TODO(student): implement the squared IPO target-gap objective.
