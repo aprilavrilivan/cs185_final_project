@@ -4,7 +4,7 @@
     {
       "max_score": 1.0,
       "name": "reward_model",
-      "output": "pair_accuracy=0.8242 threshold=0.7400",
+      "output": "pair_accuracy=0.8438 threshold=0.7400",
       "score": 1.0,
       "status": "passed",
       "visibility": "visible"
@@ -12,9 +12,9 @@
     {
       "max_score": 1.0,
       "name": "dpo",
-      "output": "win_rate=0.7015 threshold=0.6800 usable=67",
-      "score": 1.0,
-      "status": "passed",
+      "output": "Missing policy_generations/dpo.jsonl",
+      "score": 0.0,
+      "status": "failed",
       "visibility": "visible"
     },
     {
@@ -36,9 +36,9 @@
     {
       "max_score": 1.0,
       "name": "grpo",
-      "output": "Missing policy_generations/grpo.jsonl",
-      "score": 0.0,
-      "status": "failed",
+      "output": "win_rate=0.8361 threshold=0.6800 usable=61",
+      "score": 1.0,
+      "status": "passed",
       "visibility": "visible"
     },
     {
