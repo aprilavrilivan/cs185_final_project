@@ -36,9 +36,9 @@
     {
       "max_score": 1.0,
       "name": "grpo",
-      "output": "win_rate=0.8361 threshold=0.6800 usable=61",
-      "score": 1.0,
-      "status": "passed",
+      "output": "Missing policy_generations/grpo.jsonl",
+      "score": 0.0,
+      "status": "failed",
       "visibility": "visible"
     },
     {
@@ -60,9 +60,9 @@
     {
       "max_score": 1.0,
       "name": "part2_best",
-      "output": "Missing part2/offline_best.jsonl and part2/online_best.jsonl",
-      "score": 0.0,
-      "status": "failed",
+      "output": "online=0.8630 (threshold 0.7500, usable=73)",
+      "score": 1.0,
+      "status": "passed",
       "visibility": "visible"
     }
   ]

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import random
 import time
 from dataclasses import dataclass
@@ -22,7 +21,6 @@ from llm_rl_final_proj.rl.base import AlgoConfig
 from llm_rl_final_proj.rl.dr_grpo import DrGRPO
 from llm_rl_final_proj.rl.gspo import GSPO
 from llm_rl_final_proj.rl.grpo import GRPO
-from llm_rl_final_proj.rl.reinforce import Reinforce
 from llm_rl_final_proj.rollout.hf_sampler import HFSampler, SamplingConfig
 from llm_rl_final_proj.rollout.rollout_buffer import RolloutBatch
 from llm_rl_final_proj.utils.hardware import (
@@ -36,12 +34,26 @@ from llm_rl_final_proj.utils.seed import set_seed
 from llm_rl_final_proj.utils.wandb_utils import WandBLogger
 
 
+RewardModelEntry = tuple[torch.nn.Module, Any, str]
+
+
 @dataclass
 class OnlineRMGRPOConfig:
     algo: str = "grpo"
     model_name: str = "Qwen/Qwen2.5-1.5B-Instruct"
     reward_model_name: str = "Qwen/Qwen2.5-1.5B-Instruct"
+
+    # Old single-RM path. Kept for compatibility.
     reward_adapter_path: str = ""
+
+    # New ensemble paths.
+    reward_adapter_paths: str = ""
+
+    # Calibration statistics. Must match reward_adapter_paths order.
+    reward_calibration_chosen_means: str = ""
+    reward_calibration_rejected_means: str = ""
+    reward_calibration_eps: float = 1e-6
+
     dataset_name: str = "HuggingFaceH4/ultrafeedback_binarized"
     train_split: str = "train_gen"
     eval_split: str = "test_gen"
@@ -95,23 +107,26 @@ class OnlineRMGRPOConfig:
     grad_checkpointing: bool = True
 
     wandb_project: str = "llm-rl-final-project"
-    wandb_name: str = "rm_grpo"
+    wandb_name: str = "rm_grpo_calibrated_pair_mean"
     wandb_enabled: bool = True
     sample_log_n: int = 8
     sample_log_max_chars: int = 2500
 
 
 def parse_args() -> OnlineRMGRPOConfig:
-    ap = argparse.ArgumentParser(description="Train a policy online with a GRPO-family algorithm using a learned reward model.")
-    ap.add_argument(
-        "--algo",
-        type=str,
-        default=OnlineRMGRPOConfig.algo,
-        choices=["grpo", "dr_grpo", "gspo"],
+    ap = argparse.ArgumentParser(
+        description="Train a policy online with GRPO-family RL using calibrated pair-mean reward ensemble."
     )
+    ap.add_argument("--algo", type=str, default=OnlineRMGRPOConfig.algo, choices=["grpo", "dr_grpo", "gspo"])
     ap.add_argument("--model_name", type=str, default=OnlineRMGRPOConfig.model_name)
     ap.add_argument("--reward_model_name", type=str, default=OnlineRMGRPOConfig.reward_model_name)
-    ap.add_argument("--reward_adapter_path", type=str, required=True)
+
+    ap.add_argument("--reward_adapter_path", type=str, default=OnlineRMGRPOConfig.reward_adapter_path)
+    ap.add_argument("--reward_adapter_paths", type=str, default=OnlineRMGRPOConfig.reward_adapter_paths)
+    ap.add_argument("--reward_calibration_chosen_means", type=str, default=OnlineRMGRPOConfig.reward_calibration_chosen_means)
+    ap.add_argument("--reward_calibration_rejected_means", type=str, default=OnlineRMGRPOConfig.reward_calibration_rejected_means)
+    ap.add_argument("--reward_calibration_eps", type=float, default=OnlineRMGRPOConfig.reward_calibration_eps)
+
     ap.add_argument("--dataset_name", type=str, default=OnlineRMGRPOConfig.dataset_name)
     ap.add_argument("--train_split", type=str, default=OnlineRMGRPOConfig.train_split)
     ap.add_argument("--eval_split", type=str, default=OnlineRMGRPOConfig.eval_split)
@@ -162,21 +177,14 @@ def parse_args() -> OnlineRMGRPOConfig:
     ap.add_argument("--lora_dropout", type=float, default=OnlineRMGRPOConfig.lora_dropout)
     ap.add_argument("--lora_target_modules", type=str, default=OnlineRMGRPOConfig.lora_target_modules)
     ap.add_argument("--lora_bias", type=str, default=OnlineRMGRPOConfig.lora_bias)
-    ap.add_argument(
-        "--grad_checkpointing",
-        action=argparse.BooleanOptionalAction,
-        default=OnlineRMGRPOConfig.grad_checkpointing,
-    )
+    ap.add_argument("--grad_checkpointing", action=argparse.BooleanOptionalAction, default=OnlineRMGRPOConfig.grad_checkpointing)
 
     ap.add_argument("--wandb_project", type=str, default=OnlineRMGRPOConfig.wandb_project)
     ap.add_argument("--wandb_name", type=str, default=OnlineRMGRPOConfig.wandb_name)
-    ap.add_argument(
-        "--wandb_enabled",
-        action=argparse.BooleanOptionalAction,
-        default=OnlineRMGRPOConfig.wandb_enabled,
-    )
+    ap.add_argument("--wandb_enabled", action=argparse.BooleanOptionalAction, default=OnlineRMGRPOConfig.wandb_enabled)
     ap.add_argument("--sample_log_n", type=int, default=OnlineRMGRPOConfig.sample_log_n)
     ap.add_argument("--sample_log_max_chars", type=int, default=OnlineRMGRPOConfig.sample_log_max_chars)
+
     args = ap.parse_args()
     return OnlineRMGRPOConfig(**vars(args))
 
@@ -194,7 +202,88 @@ def _normalize_lora_target_modules(raw: str) -> List[str]:
     return [x.strip() for x in raw.split(",") if x.strip()]
 
 
-def _sample_prompt_batch(examples: Sequence[GenerationExample], batch_size: int, rng: random.Random) -> List[GenerationExample]:
+def _parse_csv_paths(raw: str) -> List[str]:
+    return [x.strip() for x in raw.split(",") if x.strip()]
+
+
+def _parse_csv_floats(raw: str, name: str) -> List[float]:
+    if not raw.strip():
+        raise ValueError(f"{name} is required for calibrated pair-mean ensemble.")
+    try:
+        return [float(x.strip()) for x in raw.split(",") if x.strip()]
+    except ValueError as exc:
+        raise ValueError(f"Failed to parse {name} as comma-separated floats: {raw}") from exc
+
+
+def _resolve_reward_adapter_paths(cfg: OnlineRMGRPOConfig) -> List[str]:
+    if cfg.reward_adapter_paths.strip():
+        paths = _parse_csv_paths(cfg.reward_adapter_paths)
+    elif cfg.reward_adapter_path.strip():
+        paths = [cfg.reward_adapter_path.strip()]
+    else:
+        raise ValueError("Provide --reward_adapter_paths for ensemble or --reward_adapter_path for single RM.")
+
+    if len(paths) < 1:
+        raise ValueError("At least one reward adapter path is required.")
+    return paths
+
+
+def _compute_calibration_params(
+    chosen_means: Sequence[float],
+    rejected_means: Sequence[float],
+    *,
+    eps: float,
+) -> tuple[List[float], List[float]]:
+    if len(chosen_means) != len(rejected_means):
+        raise ValueError(
+            f"chosen_means length {len(chosen_means)} != rejected_means length {len(rejected_means)}"
+        )
+    if eps <= 0:
+        raise ValueError("--reward_calibration_eps must be positive.")
+
+    centers: List[float] = []
+    scales: List[float] = []
+    for idx, (mu_pos, mu_neg) in enumerate(zip(chosen_means, rejected_means)):
+        center = 0.5 * (mu_pos + mu_neg)
+        scale = 0.5 * (mu_pos - mu_neg)
+        if scale <= 0:
+            raise ValueError(
+                f"Invalid calibration scale for RM {idx}: "
+                f"chosen_mean={mu_pos}, rejected_mean={mu_neg}, scale={scale}. "
+                "Expected chosen_mean > rejected_mean."
+            )
+        centers.append(float(center))
+        scales.append(float(max(scale, eps)))
+    return centers, scales
+
+
+def _load_reward_model_entries(
+    *,
+    reward_model_name: str,
+    adapter_paths: Sequence[str],
+    device: torch.device,
+    dtype: torch.dtype,
+) -> List[RewardModelEntry]:
+    entries: List[RewardModelEntry] = []
+    for adapter_path in adapter_paths:
+        loaded = load_reward_model_and_tokenizer(
+            reward_model_name,
+            device=device,
+            dtype=dtype,
+            adapter_path=adapter_path,
+        )
+        loaded.model.eval()
+        for p in loaded.model.parameters():
+            p.requires_grad_(False)
+        entries.append((loaded.model, loaded.tokenizer, adapter_path))
+    return entries
+
+
+def _sample_prompt_batch(
+    examples: Sequence[GenerationExample],
+    batch_size: int,
+    rng: random.Random,
+) -> List[GenerationExample]:
     if not examples:
         raise RuntimeError("Cannot sample prompts from an empty generation split.")
     return [examples[rng.randrange(len(examples))] for _ in range(batch_size)]
@@ -207,32 +296,25 @@ def _compute_group_advantages(
     *,
     divide_by_std: bool,
 ) -> torch.Tensor:
-    # TODO(student): compute one scalar advantage per sampled completion by grouping rewards
-    # into prompt-wise batches of size `group_size`, subtracting the group mean, and optionally
-    # dividing by the group standard deviation when `divide_by_std=True`.
     if group_size <= 1:
         return rewards.new_zeros(rewards.shape)
     if rewards.numel() % group_size != 0:
         raise ValueError(f"rewards length {rewards.numel()} is not divisible by group_size {group_size}")
-    
-    N = rewards.numel()  
-    num_groups = N // group_size
+
+    num_groups = rewards.numel() // group_size
     rewards_reshaped = rewards.reshape(num_groups, group_size)
     means = rewards_reshaped.mean(dim=1, keepdim=True)
     stds = rewards_reshaped.std(dim=1, keepdim=True, unbiased=False)
-    advantages = torch.zeros_like(rewards_reshaped)
 
     if not divide_by_std:
-        advantages = (rewards_reshaped - means)
-        return advantages.reshape(-1)
-    
-    valid_groups = (stds.squeeze(1) > eps)
-    advantages[valid_groups] = (
-    (rewards_reshaped[valid_groups] - means[valid_groups])
-    / (stds[valid_groups] + eps))
-    
-    return advantages.reshape(-1)
+        return (rewards_reshaped - means).reshape(-1)
 
+    advantages = torch.zeros_like(rewards_reshaped)
+    valid_groups = stds.squeeze(1) > eps
+    advantages[valid_groups] = (
+        rewards_reshaped[valid_groups] - means[valid_groups]
+    ) / (stds[valid_groups] + eps)
+    return advantages.reshape(-1)
 
 
 def _build_online_algo(cfg: OnlineRMGRPOConfig):
@@ -256,13 +338,11 @@ def _build_online_algo(cfg: OnlineRMGRPOConfig):
 
 
 def _algo_divides_advantages_by_std(algo: str) -> bool:
-    # TODO(student): return True for the algorithms that use group-standard-deviation
-    # normalization and False for the algorithms that intentionally avoid it.
-    if algo == "grpo" or algo == "gspo":
+    if algo in {"grpo", "gspo"}:
         return True
     if algo == "dr_grpo":
         return False
-    raise ValueError(f"Unknown online preference algo: {algo}. The student starter exposes only Part 1 algorithms by default. Add your Part 2 method here.")
+    raise ValueError(f"Unknown online preference algo: {algo}.")
 
 
 def _normalize_completion_for_reward_scoring(text: str) -> str:
@@ -301,6 +381,81 @@ def _sample_rows_for_logging(
     return out
 
 
+@torch.no_grad()
+def score_with_calibrated_pair_mean_ensemble(
+    reward_models: Sequence[RewardModelEntry],
+    scoring_rows: Sequence[Dict[str, Any]],
+    *,
+    calibration_centers: Sequence[float],
+    calibration_scales: Sequence[float],
+    max_prompt_tokens: int,
+    max_response_tokens: int,
+    per_device_batch_size: int,
+    device: torch.device,
+) -> tuple[List[float], Dict[str, float]]:
+    if not reward_models:
+        raise ValueError("score_with_calibrated_pair_mean_ensemble requires at least one reward model.")
+    if len(reward_models) != len(calibration_centers) or len(reward_models) != len(calibration_scales):
+        raise ValueError(
+            f"Number mismatch: reward_models={len(reward_models)}, "
+            f"centers={len(calibration_centers)}, scales={len(calibration_scales)}"
+        )
+
+    raw_tensors: List[torch.Tensor] = []
+    calibrated_tensors: List[torch.Tensor] = []
+    metrics: Dict[str, float] = {}
+
+    for idx, ((model, tokenizer, adapter_path), center, scale) in enumerate(
+        zip(reward_models, calibration_centers, calibration_scales)
+    ):
+        scores = score_prompt_response_pairs(
+            model,
+            tokenizer,
+            scoring_rows,
+            max_prompt_tokens=max_prompt_tokens,
+            max_response_tokens=max_response_tokens,
+            per_device_batch_size=per_device_batch_size,
+            device=device,
+        )
+        raw = torch.tensor(scores, device=device, dtype=torch.float32)
+        calibrated = (raw - float(center)) / float(scale)
+
+        raw_tensors.append(raw)
+        calibrated_tensors.append(calibrated)
+
+        metrics[f"reward_ensemble/member_{idx}_raw_score_mean"] = float(raw.mean().item())
+        metrics[f"reward_ensemble/member_{idx}_raw_score_std"] = float(raw.std(unbiased=False).item())
+        metrics[f"reward_ensemble/member_{idx}_calibrated_score_mean"] = float(calibrated.mean().item())
+        metrics[f"reward_ensemble/member_{idx}_calibrated_score_std"] = float(calibrated.std(unbiased=False).item())
+        metrics[f"reward_ensemble/member_{idx}_calibration_center"] = float(center)
+        metrics[f"reward_ensemble/member_{idx}_calibration_scale"] = float(scale)
+
+    raw_matrix = torch.stack(raw_tensors, dim=0)
+    calibrated_matrix = torch.stack(calibrated_tensors, dim=0)
+
+    raw_mean = raw_matrix.mean(dim=0)
+    raw_disagreement = raw_matrix.std(dim=0, unbiased=False)
+
+    calibrated_mean = calibrated_matrix.mean(dim=0)
+    calibrated_disagreement = calibrated_matrix.std(dim=0, unbiased=False)
+
+    combined = calibrated_mean
+
+    metrics["reward_ensemble/num_members"] = float(len(reward_models))
+    metrics["reward_ensemble/raw_mean_score_mean"] = float(raw_mean.mean().item())
+    metrics["reward_ensemble/raw_mean_score_std"] = float(raw_mean.std(unbiased=False).item())
+    metrics["reward_ensemble/raw_disagreement_mean"] = float(raw_disagreement.mean().item())
+    metrics["reward_ensemble/raw_disagreement_max"] = float(raw_disagreement.max().item())
+    metrics["reward_ensemble/calibrated_mean_score_mean"] = float(calibrated_mean.mean().item())
+    metrics["reward_ensemble/calibrated_mean_score_std"] = float(calibrated_mean.std(unbiased=False).item())
+    metrics["reward_ensemble/calibrated_disagreement_mean"] = float(calibrated_disagreement.mean().item())
+    metrics["reward_ensemble/calibrated_disagreement_max"] = float(calibrated_disagreement.max().item())
+    metrics["reward_ensemble/combined_score_mean"] = float(combined.mean().item())
+    metrics["reward_ensemble/combined_score_std"] = float(combined.std(unbiased=False).item())
+
+    return combined.detach().cpu().tolist(), metrics
+
+
 def save_checkpoint(model: torch.nn.Module, cfg: OnlineRMGRPOConfig, step: int) -> None:
     ckpt_dir = Path(cfg.output_dir) / "checkpoints" / f"step_{step:06d}"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
@@ -313,6 +468,11 @@ def save_checkpoint(model: torch.nn.Module, cfg: OnlineRMGRPOConfig, step: int) 
         "model_name": cfg.model_name,
         "reward_model_name": cfg.reward_model_name,
         "reward_adapter_path": cfg.reward_adapter_path,
+        "reward_adapter_paths": cfg.reward_adapter_paths,
+        "reward_calibration_chosen_means": cfg.reward_calibration_chosen_means,
+        "reward_calibration_rejected_means": cfg.reward_calibration_rejected_means,
+        "reward_calibration_eps": cfg.reward_calibration_eps,
+        "reward_formula": "calibrated_pair_mean",
         "dataset_name": cfg.dataset_name,
         "train_split": cfg.train_split,
         "eval_split": cfg.eval_split,
@@ -325,8 +485,7 @@ def evaluate_policy_with_reward_model(
     *,
     policy_model: torch.nn.Module,
     policy_tokenizer,
-    reward_model: torch.nn.Module,
-    reward_tokenizer,
+    reward_models: Sequence[RewardModelEntry],
     examples: Sequence[GenerationExample],
     device: torch.device,
     max_prompt_tokens: int,
@@ -335,6 +494,9 @@ def evaluate_policy_with_reward_model(
     temperature: float,
     top_p: float,
     generation_batch_size: int,
+    reward_batch_size: int,
+    calibration_centers: Sequence[float],
+    calibration_scales: Sequence[float],
 ) -> tuple[Dict[str, float], List[Dict[str, Any]], List[float]]:
     rows = generate_samples(
         policy_model,
@@ -348,9 +510,11 @@ def evaluate_policy_with_reward_model(
         batch_size=generation_batch_size,
     )
     metrics = summarize_generation_rows(rows)
+
     scoring_rows = []
     reference_rows = []
     has_reference = True
+
     for ex, row in zip(examples, rows):
         scoring_rows.append(
             {
@@ -371,26 +535,32 @@ def evaluate_policy_with_reward_model(
             )
         else:
             has_reference = False
-    rm_scores = score_prompt_response_pairs(
-        reward_model,
-        reward_tokenizer,
+
+    rm_scores, ensemble_metrics = score_with_calibrated_pair_mean_ensemble(
+        reward_models,
         scoring_rows,
+        calibration_centers=calibration_centers,
+        calibration_scales=calibration_scales,
         max_prompt_tokens=max_prompt_tokens,
         max_response_tokens=max_response_tokens,
-        per_device_batch_size=generation_batch_size,
+        per_device_batch_size=reward_batch_size,
         device=device,
     )
+
     score_tensor = torch.tensor(rm_scores, dtype=torch.float32)
     metrics["eval/rm_score_mean_on_policy_generations"] = float(score_tensor.mean().item())
     metrics["eval/rm_score_std_on_policy_generations"] = float(score_tensor.std(unbiased=False).item())
+    metrics.update({f"eval/{k}": v for k, v in ensemble_metrics.items()})
+
     if has_reference and reference_rows:
-        ref_scores = score_prompt_response_pairs(
-            reward_model,
-            reward_tokenizer,
+        ref_scores, ref_ensemble_metrics = score_with_calibrated_pair_mean_ensemble(
+            reward_models,
             reference_rows,
+            calibration_centers=calibration_centers,
+            calibration_scales=calibration_scales,
             max_prompt_tokens=max_prompt_tokens,
             max_response_tokens=max_response_tokens,
-            per_device_batch_size=generation_batch_size,
+            per_device_batch_size=reward_batch_size,
             device=device,
         )
         ref_tensor = torch.tensor(ref_scores, dtype=torch.float32)
@@ -398,6 +568,9 @@ def evaluate_policy_with_reward_model(
         metrics["eval/rm_reference_score_mean_on_dataset_reference_responses"] = float(ref_tensor.mean().item())
         metrics["eval/rm_fraction_policy_scores_above_reference"] = float((margin > 0).float().mean().item())
         metrics["eval/rm_margin_policy_minus_reference_mean"] = float(margin.mean().item())
+
+        metrics.update({f"eval_reference/{k}": v for k, v in ref_ensemble_metrics.items()})
+
     return metrics, rows, rm_scores
 
 
@@ -405,19 +578,36 @@ def main() -> None:
     cfg = parse_args()
     set_seed(cfg.seed)
     require_cuda_if_requested()
+
     if cfg.steps <= 0:
         raise ValueError(f"--steps must be >= 1, got {cfg.steps}")
     if cfg.batch_size <= 0:
         raise ValueError(f"--batch_size must be >= 1, got {cfg.batch_size}")
     if cfg.group_size <= 0:
         raise ValueError(f"--group_size must be >= 1, got {cfg.group_size}")
-    if not cfg.reward_adapter_path:
-        raise ValueError("--reward_adapter_path is required")
+    if cfg.reward_calibration_eps <= 0:
+        raise ValueError("--reward_calibration_eps must be positive.")
+
+    reward_adapter_paths = _resolve_reward_adapter_paths(cfg)
+    chosen_means = _parse_csv_floats(cfg.reward_calibration_chosen_means, "--reward_calibration_chosen_means")
+    rejected_means = _parse_csv_floats(cfg.reward_calibration_rejected_means, "--reward_calibration_rejected_means")
+
+    if len(reward_adapter_paths) != len(chosen_means) or len(reward_adapter_paths) != len(rejected_means):
+        raise ValueError(
+            f"Length mismatch: reward_adapter_paths={len(reward_adapter_paths)}, "
+            f"chosen_means={len(chosen_means)}, rejected_means={len(rejected_means)}"
+        )
+
+    calibration_centers, calibration_scales = _compute_calibration_params(
+        chosen_means,
+        rejected_means,
+        eps=cfg.reward_calibration_eps,
+    )
 
     if cfg.wandb_name == OnlineRMGRPOConfig.wandb_name and cfg.algo != OnlineRMGRPOConfig.algo:
-        cfg.wandb_name = f"rm_{cfg.algo}"
+        cfg.wandb_name = f"rm_{cfg.algo}_calibrated_pair_mean"
     if cfg.output_dir == OnlineRMGRPOConfig.output_dir and cfg.algo != OnlineRMGRPOConfig.algo:
-        cfg.output_dir = f"runs/rm_{cfg.algo}_default"
+        cfg.output_dir = f"runs/rm_{cfg.algo}_calibrated_pair_mean_default"
 
     output_dir = Path(cfg.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -426,17 +616,35 @@ def main() -> None:
         encoding="utf-8",
     )
 
+    calibration_meta = {
+        "reward_formula": "calibrated_pair_mean",
+        "reward_adapter_paths": reward_adapter_paths,
+        "chosen_means": chosen_means,
+        "rejected_means": rejected_means,
+        "calibration_centers": calibration_centers,
+        "calibration_scales": calibration_scales,
+        "formula": "z_i=(r_i-center_i)/scale_i; R=mean_i(z_i)",
+    }
+    (output_dir / "reward_calibration_meta.json").write_text(
+        json.dumps(calibration_meta, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
     rng = random.Random(cfg.seed)
     device, dtype = resolve_device_and_dtype()
+
     print(
         f"[setup] device={device} dtype={dtype} algo={cfg.algo} "
-        f"policy={cfg.model_name} reward_model={cfg.reward_model_name}"
+        f"policy={cfg.model_name} reward_model={cfg.reward_model_name} "
+        f"reward_formula=calibrated_pair_mean num_reward_models={len(reward_adapter_paths)}"
     )
+    print("[setup][calibration]", json.dumps(calibration_meta, indent=2, sort_keys=True))
     print("[setup][hardware]", json.dumps(get_hardware_metrics(device), indent=2, sort_keys=True))
 
     dataset_info = dataset_overview(cfg.dataset_name)
     train_examples = build_generation_examples(cfg.dataset_name, cfg.train_split, limit=cfg.train_limit)
     eval_examples = build_generation_examples(cfg.dataset_name, cfg.eval_split, limit=cfg.eval_limit)
+
     if not train_examples:
         raise RuntimeError("Training generation split produced zero examples.")
     if not eval_examples:
@@ -456,17 +664,12 @@ def main() -> None:
     policy_model = loaded_policy.model
     policy_tokenizer = loaded_policy.tokenizer
 
-    loaded_reward = load_reward_model_and_tokenizer(
-        cfg.reward_model_name,
+    reward_models = _load_reward_model_entries(
+        reward_model_name=cfg.reward_model_name,
+        adapter_paths=reward_adapter_paths,
         device=device,
         dtype=dtype,
-        adapter_path=cfg.reward_adapter_path,
     )
-    reward_model = loaded_reward.model
-    reward_tokenizer = loaded_reward.tokenizer
-    reward_model.eval()
-    for p in reward_model.parameters():
-        p.requires_grad_(False)
 
     optimizer = torch.optim.AdamW(
         [p for p in policy_model.parameters() if p.requires_grad],
@@ -474,8 +677,10 @@ def main() -> None:
         betas=(cfg.betas1, cfg.betas2),
         weight_decay=cfg.weight_decay,
     )
+
     algo = _build_online_algo(cfg)
     sampler = HFSampler(policy_tokenizer, device=device)
+
     sampling_cfg = SamplingConfig(
         min_new_tokens=cfg.min_new_tokens,
         max_new_tokens=cfg.max_new_tokens,
@@ -493,11 +698,17 @@ def main() -> None:
         enabled=cfg.wandb_enabled,
         local_dir=output_dir,
     )
+
     logger.log(
         {
             "setup/trainable_params": float(loaded_policy.trainable_params),
             "setup/total_params": float(loaded_policy.total_params),
             "setup/trainable_fraction": float(loaded_policy.trainable_params / max(1, loaded_policy.total_params)),
+            "setup/reward_ensemble_num_members": float(len(reward_models)),
+            "setup/reward_formula_calibrated_pair_mean": 1.0,
+            "setup/reward_calibration_eps": float(cfg.reward_calibration_eps),
+            **{f"setup/reward_calibration_center_{i}": float(v) for i, v in enumerate(calibration_centers)},
+            **{f"setup/reward_calibration_scale_{i}": float(v) for i, v in enumerate(calibration_scales)},
             "dataset/train_examples": float(len(train_examples)),
             "dataset/eval_examples": float(len(eval_examples)),
             **{f"dataset/{k}": float(v) for k, v in dataset_info["splits"].items()},
@@ -511,8 +722,7 @@ def main() -> None:
         metrics, rows, rm_scores = evaluate_policy_with_reward_model(
             policy_model=policy_model,
             policy_tokenizer=policy_tokenizer,
-            reward_model=reward_model,
-            reward_tokenizer=reward_tokenizer,
+            reward_models=reward_models,
             examples=eval_examples,
             device=device,
             max_prompt_tokens=cfg.max_prompt_tokens,
@@ -521,7 +731,11 @@ def main() -> None:
             temperature=cfg.eval_temperature,
             top_p=cfg.eval_top_p,
             generation_batch_size=cfg.eval_batch_size,
+            reward_batch_size=cfg.reward_batch_size,
+            calibration_centers=calibration_centers,
+            calibration_scales=calibration_scales,
         )
+
         logger.log(metrics, step=step)
         logger.log_table(
             f"samples/eval_{phase}",
@@ -540,9 +754,12 @@ def main() -> None:
     run_eval(step=0, phase="baseline")
 
     start_time = time.time()
+
     for step in range(1, cfg.steps + 1):
         maybe_update_warmup_lr(optimizer, cfg.lr, step - 1, cfg.warmup_steps)
+
         prompt_batch = _sample_prompt_batch(train_examples, cfg.batch_size, rng)
+
         rollout = sampler.rollout(
             policy_model=policy_model,
             prompt_messages=[ex.prompt_messages for ex in prompt_batch],
@@ -572,21 +789,26 @@ def main() -> None:
                     "response_text": _normalize_completion_for_reward_scoring(completion_text),
                 }
             )
-        reward_scores = score_prompt_response_pairs(
-            reward_model,
-            reward_tokenizer,
+
+        reward_scores, reward_ensemble_metrics = score_with_calibrated_pair_mean_ensemble(
+            reward_models,
             reward_rows,
+            calibration_centers=calibration_centers,
+            calibration_scales=calibration_scales,
             max_prompt_tokens=cfg.max_prompt_tokens,
             max_response_tokens=cfg.max_response_tokens,
             per_device_batch_size=cfg.reward_batch_size,
             device=device,
         )
+
         rewards = torch.tensor(reward_scores, device=device, dtype=torch.float32)
+
         advantages = _compute_group_advantages(
             rewards,
             cfg.group_size,
             divide_by_std=_algo_divides_advantages_by_std(cfg.algo),
         )
+
         batch = RolloutBatch(
             input_ids=rollout.input_ids,
             attention_mask=rollout.attention_mask,
@@ -598,13 +820,16 @@ def main() -> None:
             task_names=rollout.task_names,
             completion_texts=rollout.completion_texts,
         )
+
         train_metrics = algo.update(
             policy_model,
             optimizer,
             batch,
             grad_accum_steps=cfg.grad_accum_steps,
         )
+
         completion_lengths = batch.completion_mask.sum(dim=1).float()
+
         log_metrics = {
             "rollout/reward_model_score_mean": float(rewards.mean().item()),
             "rollout/reward_model_score_std": float(rewards.std(unbiased=False).item()),
@@ -617,16 +842,20 @@ def main() -> None:
             "rollout/count_completions": float(rewards.numel()),
             "train/learning_rate": float(optimizer.param_groups[0]["lr"]),
             "time/seconds_since_start": float(time.time() - start_time),
+            **{f"rollout/{k}": v for k, v in reward_ensemble_metrics.items()},
             **train_metrics,
             **get_cuda_memory_metrics(prefix="train"),
         }
+
         logger.log(log_metrics, step=step)
 
         should_eval = (step % cfg.eval_interval == 0) or (step == cfg.steps)
         should_save = (step % cfg.save_interval == 0) or (step == cfg.steps)
+
         if should_eval:
             print(f"[eval] running evaluation at step={step}")
             run_eval(step=step, phase=f"step_{step}")
+
         if should_save:
             print(f"[checkpoint] saving step={step}")
             save_checkpoint(policy_model, cfg, step=step)
