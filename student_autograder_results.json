@@ -60,7 +60,7 @@
     {
       "max_score": 1.0,
       "name": "part2_best",
-      "output": "online=0.8630 (threshold 0.7500, usable=73)",
+      "output": "online=0.8732 (threshold 0.7500, usable=71)",
       "score": 1.0,
       "status": "passed",
       "visibility": "visible"

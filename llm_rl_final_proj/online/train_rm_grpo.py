@@ -54,6 +54,12 @@ class OnlineRMGRPOConfig:
     reward_calibration_rejected_means: str = ""
     reward_calibration_eps: float = 1e-6
 
+    # Pessimistic ensemble penalty.
+    # Formula:
+    #   z_i = (r_i - center_i) / scale_i
+    #   R = mean_i(z_i) - lambda * std_i(z_i)
+    reward_ensemble_lambda: float = 0.0
+
     dataset_name: str = "HuggingFaceH4/ultrafeedback_binarized"
     train_split: str = "train_gen"
     eval_split: str = "test_gen"
@@ -107,7 +113,7 @@ class OnlineRMGRPOConfig:
     grad_checkpointing: bool = True
 
     wandb_project: str = "llm-rl-final-project"
-    wandb_name: str = "rm_grpo_calibrated_pair_mean"
+    wandb_name: str = "rm_grpo_calibrated_pessimistic"
     wandb_enabled: bool = True
     sample_log_n: int = 8
     sample_log_max_chars: int = 2500
@@ -115,7 +121,7 @@ class OnlineRMGRPOConfig:
 
 def parse_args() -> OnlineRMGRPOConfig:
     ap = argparse.ArgumentParser(
-        description="Train a policy online with GRPO-family RL using calibrated pair-mean reward ensemble."
+        description="Train a policy online with GRPO-family RL using calibrated pessimistic reward ensemble."
     )
     ap.add_argument("--algo", type=str, default=OnlineRMGRPOConfig.algo, choices=["grpo", "dr_grpo", "gspo"])
     ap.add_argument("--model_name", type=str, default=OnlineRMGRPOConfig.model_name)
@@ -126,6 +132,7 @@ def parse_args() -> OnlineRMGRPOConfig:
     ap.add_argument("--reward_calibration_chosen_means", type=str, default=OnlineRMGRPOConfig.reward_calibration_chosen_means)
     ap.add_argument("--reward_calibration_rejected_means", type=str, default=OnlineRMGRPOConfig.reward_calibration_rejected_means)
     ap.add_argument("--reward_calibration_eps", type=float, default=OnlineRMGRPOConfig.reward_calibration_eps)
+    ap.add_argument("--reward_ensemble_lambda", type=float, default=OnlineRMGRPOConfig.reward_ensemble_lambda)
 
     ap.add_argument("--dataset_name", type=str, default=OnlineRMGRPOConfig.dataset_name)
     ap.add_argument("--train_split", type=str, default=OnlineRMGRPOConfig.train_split)
@@ -208,7 +215,7 @@ def _parse_csv_paths(raw: str) -> List[str]:
 
 def _parse_csv_floats(raw: str, name: str) -> List[float]:
     if not raw.strip():
-        raise ValueError(f"{name} is required for calibrated pair-mean ensemble.")
+        raise ValueError(f"{name} is required for calibrated reward ensemble.")
     try:
         return [float(x.strip()) for x in raw.split(",") if x.strip()]
     except ValueError as exc:
@@ -382,24 +389,27 @@ def _sample_rows_for_logging(
 
 
 @torch.no_grad()
-def score_with_calibrated_pair_mean_ensemble(
+def score_with_calibrated_pessimistic_ensemble(
     reward_models: Sequence[RewardModelEntry],
     scoring_rows: Sequence[Dict[str, Any]],
     *,
     calibration_centers: Sequence[float],
     calibration_scales: Sequence[float],
+    reward_ensemble_lambda: float,
     max_prompt_tokens: int,
     max_response_tokens: int,
     per_device_batch_size: int,
     device: torch.device,
 ) -> tuple[List[float], Dict[str, float]]:
     if not reward_models:
-        raise ValueError("score_with_calibrated_pair_mean_ensemble requires at least one reward model.")
+        raise ValueError("score_with_calibrated_pessimistic_ensemble requires at least one reward model.")
     if len(reward_models) != len(calibration_centers) or len(reward_models) != len(calibration_scales):
         raise ValueError(
             f"Number mismatch: reward_models={len(reward_models)}, "
             f"centers={len(calibration_centers)}, scales={len(calibration_scales)}"
         )
+    if reward_ensemble_lambda < 0:
+        raise ValueError("--reward_ensemble_lambda must be non-negative.")
 
     raw_tensors: List[torch.Tensor] = []
     calibrated_tensors: List[torch.Tensor] = []
@@ -439,17 +449,25 @@ def score_with_calibrated_pair_mean_ensemble(
     calibrated_mean = calibrated_matrix.mean(dim=0)
     calibrated_disagreement = calibrated_matrix.std(dim=0, unbiased=False)
 
-    combined = calibrated_mean
+    pessimism_penalty = float(reward_ensemble_lambda) * calibrated_disagreement
+    combined = calibrated_mean - pessimism_penalty
 
     metrics["reward_ensemble/num_members"] = float(len(reward_models))
+
     metrics["reward_ensemble/raw_mean_score_mean"] = float(raw_mean.mean().item())
     metrics["reward_ensemble/raw_mean_score_std"] = float(raw_mean.std(unbiased=False).item())
     metrics["reward_ensemble/raw_disagreement_mean"] = float(raw_disagreement.mean().item())
     metrics["reward_ensemble/raw_disagreement_max"] = float(raw_disagreement.max().item())
+
     metrics["reward_ensemble/calibrated_mean_score_mean"] = float(calibrated_mean.mean().item())
     metrics["reward_ensemble/calibrated_mean_score_std"] = float(calibrated_mean.std(unbiased=False).item())
     metrics["reward_ensemble/calibrated_disagreement_mean"] = float(calibrated_disagreement.mean().item())
     metrics["reward_ensemble/calibrated_disagreement_max"] = float(calibrated_disagreement.max().item())
+
+    metrics["reward_ensemble/pessimism_lambda"] = float(reward_ensemble_lambda)
+    metrics["reward_ensemble/calibrated_pessimism_penalty_mean"] = float(pessimism_penalty.mean().item())
+    metrics["reward_ensemble/calibrated_pessimism_penalty_max"] = float(pessimism_penalty.max().item())
+
     metrics["reward_ensemble/combined_score_mean"] = float(combined.mean().item())
     metrics["reward_ensemble/combined_score_std"] = float(combined.std(unbiased=False).item())
 
@@ -472,7 +490,8 @@ def save_checkpoint(model: torch.nn.Module, cfg: OnlineRMGRPOConfig, step: int) 
         "reward_calibration_chosen_means": cfg.reward_calibration_chosen_means,
         "reward_calibration_rejected_means": cfg.reward_calibration_rejected_means,
         "reward_calibration_eps": cfg.reward_calibration_eps,
-        "reward_formula": "calibrated_pair_mean",
+        "reward_ensemble_lambda": cfg.reward_ensemble_lambda,
+        "reward_formula": "calibrated_mean_minus_lambda_calibrated_disagreement",
         "dataset_name": cfg.dataset_name,
         "train_split": cfg.train_split,
         "eval_split": cfg.eval_split,
@@ -497,6 +516,7 @@ def evaluate_policy_with_reward_model(
     reward_batch_size: int,
     calibration_centers: Sequence[float],
     calibration_scales: Sequence[float],
+    reward_ensemble_lambda: float,
 ) -> tuple[Dict[str, float], List[Dict[str, Any]], List[float]]:
     rows = generate_samples(
         policy_model,
@@ -536,11 +556,12 @@ def evaluate_policy_with_reward_model(
         else:
             has_reference = False
 
-    rm_scores, ensemble_metrics = score_with_calibrated_pair_mean_ensemble(
+    rm_scores, ensemble_metrics = score_with_calibrated_pessimistic_ensemble(
         reward_models,
         scoring_rows,
         calibration_centers=calibration_centers,
         calibration_scales=calibration_scales,
+        reward_ensemble_lambda=reward_ensemble_lambda,
         max_prompt_tokens=max_prompt_tokens,
         max_response_tokens=max_response_tokens,
         per_device_batch_size=reward_batch_size,
@@ -553,11 +574,12 @@ def evaluate_policy_with_reward_model(
     metrics.update({f"eval/{k}": v for k, v in ensemble_metrics.items()})
 
     if has_reference and reference_rows:
-        ref_scores, ref_ensemble_metrics = score_with_calibrated_pair_mean_ensemble(
+        ref_scores, ref_ensemble_metrics = score_with_calibrated_pessimistic_ensemble(
             reward_models,
             reference_rows,
             calibration_centers=calibration_centers,
             calibration_scales=calibration_scales,
+            reward_ensemble_lambda=reward_ensemble_lambda,
             max_prompt_tokens=max_prompt_tokens,
             max_response_tokens=max_response_tokens,
             per_device_batch_size=reward_batch_size,
@@ -587,6 +609,8 @@ def main() -> None:
         raise ValueError(f"--group_size must be >= 1, got {cfg.group_size}")
     if cfg.reward_calibration_eps <= 0:
         raise ValueError("--reward_calibration_eps must be positive.")
+    if cfg.reward_ensemble_lambda < 0:
+        raise ValueError("--reward_ensemble_lambda must be non-negative.")
 
     reward_adapter_paths = _resolve_reward_adapter_paths(cfg)
     chosen_means = _parse_csv_floats(cfg.reward_calibration_chosen_means, "--reward_calibration_chosen_means")
@@ -605,9 +629,9 @@ def main() -> None:
     )
 
     if cfg.wandb_name == OnlineRMGRPOConfig.wandb_name and cfg.algo != OnlineRMGRPOConfig.algo:
-        cfg.wandb_name = f"rm_{cfg.algo}_calibrated_pair_mean"
+        cfg.wandb_name = f"rm_{cfg.algo}_calibrated_pessimistic"
     if cfg.output_dir == OnlineRMGRPOConfig.output_dir and cfg.algo != OnlineRMGRPOConfig.algo:
-        cfg.output_dir = f"runs/rm_{cfg.algo}_calibrated_pair_mean_default"
+        cfg.output_dir = f"runs/rm_{cfg.algo}_calibrated_pessimistic_default"
 
     output_dir = Path(cfg.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -617,13 +641,14 @@ def main() -> None:
     )
 
     calibration_meta = {
-        "reward_formula": "calibrated_pair_mean",
+        "reward_formula": "calibrated_mean_minus_lambda_calibrated_disagreement",
         "reward_adapter_paths": reward_adapter_paths,
         "chosen_means": chosen_means,
         "rejected_means": rejected_means,
         "calibration_centers": calibration_centers,
         "calibration_scales": calibration_scales,
-        "formula": "z_i=(r_i-center_i)/scale_i; R=mean_i(z_i)",
+        "reward_ensemble_lambda": cfg.reward_ensemble_lambda,
+        "formula": "z_i=(r_i-center_i)/scale_i; R=mean_i(z_i)-lambda*std_i(z_i)",
     }
     (output_dir / "reward_calibration_meta.json").write_text(
         json.dumps(calibration_meta, indent=2, sort_keys=True),
@@ -636,7 +661,8 @@ def main() -> None:
     print(
         f"[setup] device={device} dtype={dtype} algo={cfg.algo} "
         f"policy={cfg.model_name} reward_model={cfg.reward_model_name} "
-        f"reward_formula=calibrated_pair_mean num_reward_models={len(reward_adapter_paths)}"
+        f"reward_formula=calibrated_pessimistic num_reward_models={len(reward_adapter_paths)} "
+        f"lambda={cfg.reward_ensemble_lambda}"
     )
     print("[setup][calibration]", json.dumps(calibration_meta, indent=2, sort_keys=True))
     print("[setup][hardware]", json.dumps(get_hardware_metrics(device), indent=2, sort_keys=True))
@@ -705,7 +731,8 @@ def main() -> None:
             "setup/total_params": float(loaded_policy.total_params),
             "setup/trainable_fraction": float(loaded_policy.trainable_params / max(1, loaded_policy.total_params)),
             "setup/reward_ensemble_num_members": float(len(reward_models)),
-            "setup/reward_formula_calibrated_pair_mean": 1.0,
+            "setup/reward_formula_calibrated_pessimistic": 1.0,
+            "setup/reward_ensemble_lambda": float(cfg.reward_ensemble_lambda),
             "setup/reward_calibration_eps": float(cfg.reward_calibration_eps),
             **{f"setup/reward_calibration_center_{i}": float(v) for i, v in enumerate(calibration_centers)},
             **{f"setup/reward_calibration_scale_{i}": float(v) for i, v in enumerate(calibration_scales)},
@@ -734,6 +761,7 @@ def main() -> None:
             reward_batch_size=cfg.reward_batch_size,
             calibration_centers=calibration_centers,
             calibration_scales=calibration_scales,
+            reward_ensemble_lambda=cfg.reward_ensemble_lambda,
         )
 
         logger.log(metrics, step=step)
@@ -790,11 +818,12 @@ def main() -> None:
                 }
             )
 
-        reward_scores, reward_ensemble_metrics = score_with_calibrated_pair_mean_ensemble(
+        reward_scores, reward_ensemble_metrics = score_with_calibrated_pessimistic_ensemble(
             reward_models,
             reward_rows,
             calibration_centers=calibration_centers,
             calibration_scales=calibration_scales,
+            reward_ensemble_lambda=cfg.reward_ensemble_lambda,
             max_prompt_tokens=cfg.max_prompt_tokens,
             max_response_tokens=cfg.max_response_tokens,
             per_device_batch_size=cfg.reward_batch_size,
