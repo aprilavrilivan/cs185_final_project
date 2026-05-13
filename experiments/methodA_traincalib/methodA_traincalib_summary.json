@@ -1,0 +1,55 @@
+{
+  "part2_best": {
+    "max_score": 1.0,
+    "name": "part2_best",
+    "output": "offline=0.8636 (threshold 0.8300, usable=66)",
+    "score": 1.0,
+    "status": "passed",
+    "visibility": "visible"
+  },
+  "selection_counts": {
+    "aot": 49,
+    "ipo": 34,
+    "dpo": 45
+  },
+  "score_by_candidate": {
+    "dpo": {
+      "mean": 0.1360662877559662,
+      "std": 1.2860268354415894,
+      "min": -2.33201265335083,
+      "max": 2.8635568618774414
+    },
+    "ipo": {
+      "mean": -0.23845282196998596,
+      "std": 1.5155918598175049,
+      "min": -4.778404712677002,
+      "max": 3.3579013347625732
+    },
+    "aot": {
+      "mean": 0.010117461904883385,
+      "std": 1.4582469463348389,
+      "min": -2.4183666706085205,
+      "max": 3.454000234603882
+    }
+  },
+  "calibration_chosen_means": [
+    -2.1875,
+    2.375,
+    4.28125
+  ],
+  "calibration_rejected_means": [
+    -9.0625,
+    -3.28125,
+    -2.046875
+  ],
+  "calibration_centers": [
+    -5.625,
+    -0.453125,
+    1.1171875
+  ],
+  "calibration_scales": [
+    3.4375,
+    2.828125,
+    3.1640625
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "method": "Method B: train-calibrated rank-advantage GRPO, seeds 1 and 2",
+  "threshold": 0.75,
+  "rows": [
+    {
+      "seed": 1,
+      "step": 75,
+      "eval": 1,
+      "online": 0.5833,
+      "threshold": 0.75,
+      "usable": 36,
+      "status": "failed",
+      "file": "seed1_step75_eval1.json",
+      "output": "online=0.5833 (threshold 0.7500, usable=36)"
+    },
+    {
+      "seed": 1,
+      "step": 100,
+      "eval": 1,
+      "online": 0.6327,
+      "threshold": 0.75,
+      "usable": 49,
+      "status": "failed",
+      "file": "seed1_step100_eval1.json",
+      "output": "online=0.6327 (threshold 0.7500, usable=49)"
+    },
+    {
+      "seed": 1,
+      "step": 100,
+      "eval": 2,
+      "online": 0.6087,
+      "threshold": 0.75,
+      "usable": 46,
+      "status": "failed",
+      "file": "seed1_step100_eval2.json",
+      "output": "online=0.6087 (threshold 0.7500, usable=46)"
+    },
+    {
+      "seed": 1,
+      "step": 100,
+      "eval": 3,
+      "online": 0.6667,
+      "threshold": 0.75,
+      "usable": 42,
+      "status": "failed",
+      "file": "seed1_step100_eval3.json",
+      "output": "online=0.6667 (threshold 0.7500, usable=42)"
+    },
+    {
+      "seed": 2,
+      "step": 75,
+      "eval": 1,
+      "online": 0.7021,
+      "threshold": 0.75,
+      "usable": 47,
+      "status": "failed",
+      "file": "seed2_step75_eval1.json",
+      "output": "online=0.7021 (threshold 0.7500, usable=47)"
+    },
+    {
+      "seed": 2,
+      "step": 100,
+      "eval": 1,
+      "online": 0.7258,
+      "threshold": 0.75,
+      "usable": 62,
+      "status": "failed",
+      "file": "seed2_step100_eval1.json",
+      "output": "online=0.7258 (threshold 0.7500, usable=62)"
+    },
+    {
+      "seed": 2,
+      "step": 100,
+      "eval": 2,
+      "online": 0.7636,
+      "threshold": 0.75,
+      "usable": 55,
+      "status": "passed",
+      "file": "seed2_step100_eval2.json",
+      "output": "online=0.7636 (threshold 0.7500, usable=55)"
+    },
+    {
+      "seed": 2,
+      "step": 100,
+      "eval": 3,
+      "online": 0.7705,
+      "threshold": 0.75,
+      "usable": 61,
+      "status": "passed",
+      "file": "seed2_step100_eval3.json",
+      "output": "online=0.7705 (threshold 0.7500, usable=61)"
+    }
+  ],
+  "summary_by_seed_step": [
+    {
+      "seed": 1,
+      "step": 75,
+      "n": 1,
+      "mean_online": 0.5833,
+      "min_online": 0.5833,
+      "max_online": 0.5833,
+      "std_online": 0.0,
+      "values": [
+        0.5833
+      ],
+      "num_passed": 0
+    },
+    {
+      "seed": 1,
+      "step": 100,
+      "n": 3,
+      "mean_online": 0.6360333333333333,
+      "min_online": 0.6087,
+      "max_online": 0.6667,
+      "std_online": 0.029143323992525824,
+      "values": [
+        0.6327,
+        0.6087,
+        0.6667
+      ],
+      "num_passed": 0
+    },
+    {
+      "seed": 2,
+      "step": 75,
+      "n": 1,
+      "mean_online": 0.7021,
+      "min_online": 0.7021,
+      "max_online": 0.7021,
+      "std_online": 0.0,
+      "values": [
+        0.7021
+      ],
+      "num_passed": 0
+    },
+    {
+      "seed": 2,
+      "step": 100,
+      "n": 3,
+      "mean_online": 0.7533,
+      "min_online": 0.7258,
+      "max_online": 0.7705,
+      "std_online": 0.024064288894542443,
+      "values": [
+        0.7258,
+        0.7636,
+        0.7705
+      ],
+      "num_passed": 2
+    }
+  ]
+}

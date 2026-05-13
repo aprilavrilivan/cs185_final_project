@@ -1,0 +1,53 @@
+{
+  "best_single": {
+    "adapter": "/vol/runs/rm__seed0/checkpoints/step_000425/adapter",
+    "chosen_mean_test": -2.890625,
+    "count": 256.0,
+    "json_path": "rm_eval_no_tag/seed0_step425.json",
+    "margin_mean": 4.9375,
+    "margin_std": 5.125,
+    "pair_accuracy": 0.85546875,
+    "rejected_mean_test": -7.84375,
+    "seed": 0,
+    "step": 425
+  },
+  "selected": [
+    {
+      "adapter": "/vol/runs/rm__seed0/checkpoints/step_000425/adapter",
+      "chosen_mean_test": -2.890625,
+      "count": 256.0,
+      "json_path": "rm_eval_no_tag/seed0_step425.json",
+      "margin_mean": 4.9375,
+      "margin_std": 5.125,
+      "pair_accuracy": 0.85546875,
+      "rejected_mean_test": -7.84375,
+      "seed": 0,
+      "step": 425
+    },
+    {
+      "adapter": "/vol/runs/rm__seed1/checkpoints/step_000350/adapter",
+      "chosen_mean_test": 1.9609375,
+      "count": 256.0,
+      "json_path": "rm_eval_no_tag/seed1_step350.json",
+      "margin_mean": 4.125,
+      "margin_std": 4.90625,
+      "pair_accuracy": 0.82421875,
+      "rejected_mean_test": -2.171875,
+      "seed": 1,
+      "step": 350
+    },
+    {
+      "adapter": "/vol/runs/rm__seed2/checkpoints/step_000325/adapter",
+      "chosen_mean_test": 3.8125,
+      "count": 256.0,
+      "json_path": "rm_eval_no_tag/seed2_step325.json",
+      "margin_mean": 4.65625,
+      "margin_std": 5.0,
+      "pair_accuracy": 0.83984375,
+      "rejected_mean_test": -0.84765625,
+      "seed": 2,
+      "step": 325
+    }
+  ],
+  "selection_rule": "per seed: max test_prefs pair_accuracy; tie-break by margin_mean"
+}

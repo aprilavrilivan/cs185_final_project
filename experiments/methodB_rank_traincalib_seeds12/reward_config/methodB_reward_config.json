@@ -1,0 +1,28 @@
+{
+  "method": "Method B: train-calibrated rank-advantage GRPO",
+  "included_policy_seeds": [
+    1,
+    2
+  ],
+  "included_checkpoints": [
+    75,
+    100
+  ],
+  "reward_adapter_paths": "/vol/runs/rm__seed0/checkpoints/step_000425/adapter,/vol/runs/rm__seed1/checkpoints/step_000350/adapter,/vol/runs/rm__seed2/checkpoints/step_000325/adapter",
+  "reward_calibration_chosen_means": "-2.187500,2.375000,4.281250",
+  "reward_calibration_rejected_means": "-9.062500,-3.281250,-2.046875",
+  "reward_ensemble_lambda": 0.0,
+  "advantage_mode": "rank",
+  "calibration_source": "train_prefs",
+  "reward_checkpoint_selection_source": "test_prefs diagnostics from Method A",
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "train_split": "train_gen",
+  "eval_split": "test_gen",
+  "submission_prompts": "public_test_gen_prompts_128.jsonl",
+  "submission_decoding": {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "max_new_tokens": 256,
+    "max_prompt_tokens": 700
+  }
+}
