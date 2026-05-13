@@ -1,0 +1,39 @@
+{
+  "method": "Method A: train-calibrated fixed-candidate RM reranking",
+  "threshold": 0.83,
+  "n": 3,
+  "mean_offline": 0.8609333333333333,
+  "min_offline": 0.8571,
+  "max_offline": 0.8636,
+  "std_offline": 0.0034034296427770476,
+  "num_passed": 3,
+  "rows": [
+    {
+      "eval": 1,
+      "offline": 0.8636,
+      "threshold": 0.83,
+      "usable": 66,
+      "status": "passed",
+      "file": "methodA_offline_eval1.json",
+      "output": "offline=0.8636 (threshold 0.8300, usable=66)"
+    },
+    {
+      "eval": 2,
+      "offline": 0.8621,
+      "threshold": 0.83,
+      "usable": 58,
+      "status": "passed",
+      "file": "methodA_offline_eval2.json",
+      "output": "offline=0.8621 (threshold 0.8300, usable=58)"
+    },
+    {
+      "eval": 3,
+      "offline": 0.8571,
+      "threshold": 0.83,
+      "usable": 63,
+      "status": "passed",
+      "file": "methodA_offline_eval3.json",
+      "output": "offline=0.8571 (threshold 0.8300, usable=63)"
+    }
+  ]
+}
