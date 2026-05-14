@@ -549,7 +549,6 @@ def save_checkpoint(model: torch.nn.Module, cfg: OnlineRMGRPOConfig, step: int) 
         "reward_calibration_rejected_means": cfg.reward_calibration_rejected_means,
         "reward_calibration_eps": cfg.reward_calibration_eps,
         "reward_ensemble_lambda": cfg.reward_ensemble_lambda,
-        "reward_formula": "calibrated_mean_minus_lambda_calibrated_disagreement",
         "advantage_mode": cfg.advantage_mode,
         "dataset_name": cfg.dataset_name,
         "train_split": cfg.train_split,
