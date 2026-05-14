@@ -1,0 +1,127 @@
+diff --git a/llm_rl_final_proj/online/train_rm_grpo.py b/llm_rl_final_proj/online/train_rm_grpo.py
+index f3fbd66..27b9425 100644
+--- a/llm_rl_final_proj/online/train_rm_grpo.py
++++ b/llm_rl_final_proj/online/train_rm_grpo.py
+@@ -91,6 +91,7 @@ class OnlineRMGRPOConfig:
+     clip_eps_high: float = 0.0
+     kl_coef: float = 0.02
+     adv_clip: float = 5.0
++    advantage_mode: str = "reward"  # reward | rank
+ 
+     max_prompt_tokens: int = 700
+     max_response_tokens: int = 256
+@@ -165,6 +166,12 @@ def parse_args() -> OnlineRMGRPOConfig:
+     ap.add_argument("--clip_eps_high", type=float, default=OnlineRMGRPOConfig.clip_eps_high)
+     ap.add_argument("--kl_coef", type=float, default=OnlineRMGRPOConfig.kl_coef)
+     ap.add_argument("--adv_clip", type=float, default=OnlineRMGRPOConfig.adv_clip)
++    ap.add_argument(
++        "--advantage_mode",
++        type=str,
++        default=OnlineRMGRPOConfig.advantage_mode,
++        choices=["reward", "rank"],
++    )
+ 
+     ap.add_argument("--max_prompt_tokens", type=int, default=OnlineRMGRPOConfig.max_prompt_tokens)
+     ap.add_argument("--max_response_tokens", type=int, default=OnlineRMGRPOConfig.max_response_tokens)
+@@ -296,12 +303,47 @@ def _sample_prompt_batch(
+     return [examples[rng.randrange(len(examples))] for _ in range(batch_size)]
+ 
+ 
++def _rank_group_advantages(
++    rewards_reshaped: torch.Tensor,
++    eps: float = 1e-6,
++) -> torch.Tensor:
++    if rewards_reshaped.ndim != 2:
++        raise ValueError(f"rank advantages expect [num_groups, group_size], got {tuple(rewards_reshaped.shape)}")
++
++    group_size = int(rewards_reshaped.shape[1])
++    if group_size <= 1:
++        return torch.zeros_like(rewards_reshaped, dtype=torch.float32)
++
++    order = torch.argsort(rewards_reshaped, dim=1)
++    ranks = torch.empty_like(rewards_reshaped, dtype=torch.float32)
++
++    rank_values = torch.arange(
++        group_size,
++        device=rewards_reshaped.device,
++        dtype=torch.float32,
++    ).view(1, group_size).expand(rewards_reshaped.shape[0], group_size)
++
++    ranks.scatter_(1, order, rank_values)
++
++    center = 0.5 * float(group_size - 1)
++    scale = max(center, float(eps))
++    advantages = (ranks - center) / scale
++
++    # If all rewards in a group are exactly tied, do not create an artificial preference.
++    spread = (
++        rewards_reshaped.max(dim=1, keepdim=True).values
++        - rewards_reshaped.min(dim=1, keepdim=True).values
++    )
++    return torch.where(spread > eps, advantages, torch.zeros_like(advantages))
++
++
+ def _compute_group_advantages(
+     rewards: torch.Tensor,
+     group_size: int,
+     eps: float = 1e-6,
+     *,
+     divide_by_std: bool,
++    advantage_mode: str = "reward",
+ ) -> torch.Tensor:
+     if group_size <= 1:
+         return rewards.new_zeros(rewards.shape)
+@@ -310,6 +352,13 @@ def _compute_group_advantages(
+ 
+     num_groups = rewards.numel() // group_size
+     rewards_reshaped = rewards.reshape(num_groups, group_size)
++
++    if advantage_mode == "rank":
++        return _rank_group_advantages(rewards_reshaped, eps=eps).reshape(-1)
++
++    if advantage_mode != "reward":
++        raise ValueError(f"Unknown advantage_mode: {advantage_mode}")
++
+     means = rewards_reshaped.mean(dim=1, keepdim=True)
+     stds = rewards_reshaped.std(dim=1, keepdim=True, unbiased=False)
+ 
+@@ -323,7 +372,6 @@ def _compute_group_advantages(
+     ) / (stds[valid_groups] + eps)
+     return advantages.reshape(-1)
+ 
+-
+ def _build_online_algo(cfg: OnlineRMGRPOConfig):
+     algo_cfg = AlgoConfig(
+         ppo_epochs=cfg.ppo_epochs,
+@@ -492,6 +540,7 @@ def save_checkpoint(model: torch.nn.Module, cfg: OnlineRMGRPOConfig, step: int)
+         "reward_calibration_eps": cfg.reward_calibration_eps,
+         "reward_ensemble_lambda": cfg.reward_ensemble_lambda,
+         "reward_formula": "calibrated_mean_minus_lambda_calibrated_disagreement",
++        "advantage_mode": cfg.advantage_mode,
+         "dataset_name": cfg.dataset_name,
+         "train_split": cfg.train_split,
+         "eval_split": cfg.eval_split,
+@@ -733,6 +782,7 @@ def main() -> None:
+             "setup/reward_ensemble_num_members": float(len(reward_models)),
+             "setup/reward_formula_calibrated_pessimistic": 1.0,
+             "setup/reward_ensemble_lambda": float(cfg.reward_ensemble_lambda),
++            "setup/advantage_mode_rank": 1.0 if cfg.advantage_mode == "rank" else 0.0,
+             "setup/reward_calibration_eps": float(cfg.reward_calibration_eps),
+             **{f"setup/reward_calibration_center_{i}": float(v) for i, v in enumerate(calibration_centers)},
+             **{f"setup/reward_calibration_scale_{i}": float(v) for i, v in enumerate(calibration_scales)},
+@@ -836,6 +886,7 @@ def main() -> None:
+             rewards,
+             cfg.group_size,
+             divide_by_std=_algo_divides_advantages_by_std(cfg.algo),
++            advantage_mode=cfg.advantage_mode,
+         )
+ 
+         batch = RolloutBatch(
+@@ -866,6 +917,7 @@ def main() -> None:
+             "rollout/reward_model_score_max": float(rewards.max().item()),
+             "rollout/advantage_mean": float(advantages.mean().item()),
+             "rollout/advantage_std": float(advantages.std(unbiased=False).item()),
++            "rollout/advantage_mode_rank": 1.0 if cfg.advantage_mode == "rank" else 0.0,
+             "rollout/completion_mean_tokens": float(completion_lengths.mean().item()),
+             "rollout/completion_max_tokens": float(completion_lengths.max().item()),
+             "rollout/count_completions": float(rewards.numel()),

@@ -1,0 +1,4 @@
+eval	offline	status	usable	file	output
+1	0.8636	passed	66	methodA_offline_eval1.json	offline=0.8636 (threshold 0.8300, usable=66)
+2	0.8621	passed	58	methodA_offline_eval2.json	offline=0.8621 (threshold 0.8300, usable=58)
+3	0.8571	passed	63	methodA_offline_eval3.json	offline=0.8571 (threshold 0.8300, usable=63)

@@ -1,0 +1,1272 @@
+{
+  "method": "fixed_candidate_calibrated_reward_model_reranking",
+  "num_prompts": 128,
+  "candidate_names": [
+    "dpo",
+    "ipo",
+    "aot"
+  ],
+  "candidate_jsonls": [
+    "/vol/part2_candidates_methodA_no_tag_20260512_1319/dpo.jsonl",
+    "/vol/part2_candidates_methodA_no_tag_20260512_1319/ipo.jsonl",
+    "/vol/part2_candidates_methodA_no_tag_20260512_1319/aot.jsonl"
+  ],
+  "reward_model_name": "Qwen/Qwen2.5-1.5B-Instruct",
+  "reward_adapter_paths": [
+    "/vol/runs/rm__seed0/checkpoints/step_000425/adapter",
+    "/vol/runs/rm__seed1/checkpoints/step_000350/adapter",
+    "/vol/runs/rm__seed2/checkpoints/step_000325/adapter"
+  ],
+  "chosen_means": [
+    -2.1875,
+    2.375,
+    4.28125
+  ],
+  "rejected_means": [
+    -9.0625,
+    -3.28125,
+    -2.046875
+  ],
+  "centers": [
+    -5.625,
+    -0.453125,
+    1.1171875
+  ],
+  "scales": [
+    3.4375,
+    2.828125,
+    3.1640625
+  ],
+  "selection_counts": {
+    "aot": 49,
+    "ipo": 34,
+    "dpo": 45
+  },
+  "score_by_candidate": {
+    "dpo": {
+      "mean": 0.1360662877559662,
+      "std": 1.2860268354415894,
+      "min": -2.33201265335083,
+      "max": 2.8635568618774414
+    },
+    "ipo": {
+      "mean": -0.23845282196998596,
+      "std": 1.5155918598175049,
+      "min": -4.778404712677002,
+      "max": 3.3579013347625732
+    },
+    "aot": {
+      "mean": 0.010117461904883385,
+      "std": 1.4582469463348389,
+      "min": -2.4183666706085205,
+      "max": 3.454000234603882
+    }
+  },
+  "reward_model_summaries": [
+    {
+      "adapter_path": "/vol/runs/rm__seed0/checkpoints/step_000425/adapter",
+      "center": -5.625,
+      "scale": 3.4375,
+      "raw_score": {
+        "mean": -5.909780502319336,
+        "std": 4.686418056488037,
+        "min": -19.75,
+        "max": 9.6875
+      },
+      "calibrated_score": {
+        "mean": -0.08284524828195572,
+        "std": 1.3633215427398682,
+        "min": -4.109090805053711,
+        "max": 4.454545497894287
+      }
+    },
+    {
+      "adapter_path": "/vol/runs/rm__seed1/checkpoints/step_000350/adapter",
+      "center": -0.453125,
+      "scale": 2.828125,
+      "raw_score": {
+        "mean": -0.17174656689167023,
+        "std": 4.275938510894775,
+        "min": -15.75,
+        "max": 9.5625
+      },
+      "calibrated_score": {
+        "mean": 0.09949291497468948,
+        "std": 1.5119340419769287,
+        "min": -5.408839702606201,
+        "max": 3.5414364337921143
+      }
+    },
+    {
+      "adapter_path": "/vol/runs/rm__seed2/checkpoints/step_000325/adapter",
+      "center": 1.1171875,
+      "scale": 3.1640625,
+      "raw_score": {
+        "mean": 0.7725680470466614,
+        "std": 5.062118053436279,
+        "min": -14.125,
+        "max": 11.75
+      },
+      "calibrated_score": {
+        "mean": -0.1089167594909668,
+        "std": 1.599879264831543,
+        "min": -4.817284107208252,
+        "max": 3.3604938983917236
+      }
+    }
+  ],
+  "per_prompt_selection": [
+    {
+      "row_id": "d5acf2f9f2eda66890437059acee7fbe",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.3574606304501946,
+        "ipo": -1.0037051505437018,
+        "aot": 0.4198376232139277
+      }
+    },
+    {
+      "row_id": "6e498ba912c112acd421920fb64351e0",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 0.6120906217898238,
+        "ipo": 1.5354754832962323,
+        "aot": 1.0578439397039765
+      }
+    },
+    {
+      "row_id": "af699d1370daa08b012378c0b6e2c114",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -2.10267810083648,
+        "ipo": -1.3572436044504799,
+        "aot": -1.5142453799298488
+      }
+    },
+    {
+      "row_id": "f126c3d414f38abaea42cfe883ac92c9",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.694184943356214,
+        "ipo": -1.6743059818566262,
+        "aot": -0.2852315874108385
+      }
+    },
+    {
+      "row_id": "f980f4d384fa3d72d63cff514a41a9dd",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.6182754493988379,
+        "ipo": -0.9674403126827926,
+        "aot": 0.6345920841316789
+      }
+    },
+    {
+      "row_id": "f455b099fa377de4581cba0b35340ffb",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -0.1282452104428777,
+        "ipo": -0.05224032839134127,
+        "aot": -0.25591798897507917
+      }
+    },
+    {
+      "row_id": "fd63523499b7977e58102b202e4f5ed3",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -2.316934435412029,
+        "ipo": -1.516531800509701,
+        "aot": -2.418366600318718
+      }
+    },
+    {
+      "row_id": "36f207e38265a8c97440b7e784bc4d6b",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.2333564569368742,
+        "ipo": 0.22967194969957402,
+        "aot": 1.0527111714650081
+      }
+    },
+    {
+      "row_id": "24124aedde3893861690a5db3490d474",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 0.9672954219915546,
+        "ipo": 1.7024179796739647,
+        "aot": 0.3693057028231982
+      }
+    },
+    {
+      "row_id": "dbcdb2d20bb9dcae449b101ae8d05017",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -0.3395751754810226,
+        "ipo": 0.9168604398806977,
+        "aot": -0.8383706101324271
+      }
+    },
+    {
+      "row_id": "ca93ce356c5d75aac3bee6ab81019c31",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.770102498279294,
+        "ipo": 0.4324737036830345,
+        "aot": -1.7166033157438927
+      }
+    },
+    {
+      "row_id": "a0bffa87e71217c4b52c1dd303652ad5",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 1.068896040412308,
+        "ipo": 0.3834505273731793,
+        "aot": 1.4347639997271673
+      }
+    },
+    {
+      "row_id": "49617fdee490252186b5c77c3552f022",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.42227854563643386,
+        "ipo": -1.4477978061771801,
+        "aot": 0.6603753929720779
+      }
+    },
+    {
+      "row_id": "49b12d27c1e86e157137160e73413d95",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -0.30462069022535565,
+        "ipo": 1.9532842234499692,
+        "aot": 0.6874228265879585
+      }
+    },
+    {
+      "row_id": "4ef7d8dd8b9f22f24ebff041e0d584e9",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.9857549301072934,
+        "ipo": 1.4704997850409143,
+        "aot": -0.25794422380134474
+      }
+    },
+    {
+      "row_id": "beb9e284b104f70a0d44c6fad06f86e6",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 1.0245457697498828,
+        "ipo": -0.867541178099803,
+        "aot": 1.1661110801073968
+      }
+    },
+    {
+      "row_id": "f25487bbf004916de47b192ff9f3ca12",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.5538227579664041,
+        "ipo": -0.25292726735329557,
+        "aot": 0.12082156484013451
+      }
+    },
+    {
+      "row_id": "2abca3e50c2a9d2dab69e3ca8299e0d5",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.0054566537071141,
+        "ipo": 1.9052922565123303,
+        "aot": -1.124784989241711
+      }
+    },
+    {
+      "row_id": "c1c63e0adb490b2aceea4086d6821a14",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.7667610213036855,
+        "ipo": -1.1419717948876942,
+        "aot": -0.525826714040342
+      }
+    },
+    {
+      "row_id": "b3349c0781f03d59276a030cf5222d93",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 2.8635568907821822,
+        "ipo": -1.3722243924822193,
+        "aot": 2.747633176454539
+      }
+    },
+    {
+      "row_id": "c46b73f4514ac5298dec53e83222f6ab",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.5290874780131993,
+        "ipo": -0.9894442687567302,
+        "aot": -0.48547486322194733
+      }
+    },
+    {
+      "row_id": "8e79a4b1c3987950fd813ef28785e347",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 2.4730470243668523,
+        "ipo": 0.8186192805898146,
+        "aot": -0.8371364556140491
+      }
+    },
+    {
+      "row_id": "2681636cf0044a4be45c01ef55d9679d",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.5617838400373696,
+        "ipo": 0.30042593936086875,
+        "aot": -0.13668958874606513
+      }
+    },
+    {
+      "row_id": "9f13d4a3d8a37df780e9c54f503bac5d",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.1929303263864344,
+        "ipo": -2.195925285182498,
+        "aot": -0.27712483955577877
+      }
+    },
+    {
+      "row_id": "294ec0497767176ad3393adde6226f57",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.5750378762042359,
+        "ipo": -1.4307875150109648,
+        "aot": -0.9206127160700518
+      }
+    },
+    {
+      "row_id": "924dafd91e0eb7c99da44243e96e75a6",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.10563965313044502,
+        "ipo": -2.138408434663806,
+        "aot": 0.3647390624063429
+      }
+    },
+    {
+      "row_id": "a272c40f257045545eb0888cf7ba238f",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -0.12740108264970143,
+        "ipo": -1.9203799815217864,
+        "aot": -1.703881871714898
+      }
+    },
+    {
+      "row_id": "53bb5b342113f7a574fa53a1a96235d3",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 2.6762456775655057,
+        "ipo": 2.2709820219795667,
+        "aot": 2.6711233472436664
+      }
+    },
+    {
+      "row_id": "40e8ab9893fb5051a9cb3e72a40bc5bb",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.694754714114751,
+        "ipo": 1.1350143030468383,
+        "aot": 1.1851631725480711
+      }
+    },
+    {
+      "row_id": "1bdf3b6e57de7bd076851eec2296693b",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -0.8983303466421944,
+        "ipo": -2.0828687943482294,
+        "aot": -2.1467860516356527
+      }
+    },
+    {
+      "row_id": "ac5b0089eda28f95acfa0c46a0f62dba",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.081907265823779,
+        "ipo": -1.1354845777190774,
+        "aot": 0.4995002201263711
+      }
+    },
+    {
+      "row_id": "776a763eb271eb97f3f37c0590f4d47f",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -1.3640675219557967,
+        "ipo": -1.595777707502692,
+        "aot": -1.679131399941713
+      }
+    },
+    {
+      "row_id": "bc38d57fad7bae898adb3b1680504b86",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.994037365676408,
+        "ipo": -0.9745848085934028,
+        "aot": -0.7007254869133321
+      }
+    },
+    {
+      "row_id": "b2abb0f8f5b65eb10f7920d8e35802f2",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 2.606315043208843,
+        "ipo": 2.718838270158098,
+        "aot": 2.5372090043053825
+      }
+    },
+    {
+      "row_id": "cb04fa545ebf06b6710514c6dcea9aa0",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 2.6427042059638746,
+        "ipo": 3.0856415598588707,
+        "aot": 0.779432032624175
+      }
+    },
+    {
+      "row_id": "5cd325673d330ea9dbc2175f2a6b6aab",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 0.49352952483707546,
+        "ipo": 0.18458360978311866,
+        "aot": 1.293045866894854
+      }
+    },
+    {
+      "row_id": "91ba9c68ee28c2115b96d18041b61a7d",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 0.8711593115521906,
+        "ipo": 1.0855052468619073,
+        "aot": 1.9597340294700638
+      }
+    },
+    {
+      "row_id": "370fd56c572283d74bdba27e1dc62fe9",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.2831846188506715,
+        "ipo": -1.250575738973529,
+        "aot": -2.040377583901218
+      }
+    },
+    {
+      "row_id": "80df46f6fff22b3f0baf14adede6e2d2",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.362530771186388,
+        "ipo": -0.6272328358270653,
+        "aot": -1.2259854530572762
+      }
+    },
+    {
+      "row_id": "88ae061363b9484fabef5cd8b1dc1df3",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 0.6430751137319584,
+        "ipo": 0.33715717642973625,
+        "aot": 0.9868762311058197
+      }
+    },
+    {
+      "row_id": "8310699f33fee7887234626a8bce6cc0",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.25636206550878127,
+        "ipo": -1.2625754165349008,
+        "aot": -1.351847097949001
+      }
+    },
+    {
+      "row_id": "8b7620d1df9fda922f5dddd76730ae52",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.714620570085963,
+        "ipo": -1.7837581875642035,
+        "aot": -0.9563411896745229
+      }
+    },
+    {
+      "row_id": "bd537a1ff24ef4f7eefbb5d40465eb9b",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.0377406146589694,
+        "ipo": -1.4774824157267372,
+        "aot": -0.47450037514494237
+      }
+    },
+    {
+      "row_id": "6129b5437ac830e6ca90e425b4260e9e",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.5846122365459383,
+        "ipo": -1.327482312381023,
+        "aot": -1.4033690702812862
+      }
+    },
+    {
+      "row_id": "549c8c7768cd289d48045c531e58ce74",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.3555815986755213,
+        "ipo": -0.7848045629199711,
+        "aot": -2.1675291899969618
+      }
+    },
+    {
+      "row_id": "438da1752a9cb075ed0d540b57a68cc4",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 1.0746349312647654,
+        "ipo": -1.108114705475049,
+        "aot": 1.390774948172124
+      }
+    },
+    {
+      "row_id": "7b82a23f71affa930a73d2507afb2ecc",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.9396382228257611,
+        "ipo": -2.1609493750684665,
+        "aot": -2.024182897111074
+      }
+    },
+    {
+      "row_id": "d87c30c0033d9e5ed3b68cec8df1dfa1",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 0.02382966146010959,
+        "ipo": 1.1209372216124824,
+        "aot": -1.684949350265495
+      }
+    },
+    {
+      "row_id": "e430e5453abd98103bc878fcad4bd83c",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 0.4697569102111766,
+        "ipo": 2.027486549555303,
+        "aot": -0.12919645606877037
+      }
+    },
+    {
+      "row_id": "a960069b8fe442c5fc9a3f7eb85257d9",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 1.2804420302885617,
+        "ipo": -1.1355697345875368,
+        "aot": 2.1292049820901875
+      }
+    },
+    {
+      "row_id": "be13bcbc9ad71272b377a13dd72cdd92",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.8086403217772156,
+        "ipo": -1.6644397732181648,
+        "aot": -0.5980329176768711
+      }
+    },
+    {
+      "row_id": "c1d36bdf9e7b16a9a1b28e6f818aaee5",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.4089062561361518,
+        "ipo": -1.8722378274250588,
+        "aot": -0.9981554340209956
+      }
+    },
+    {
+      "row_id": "cb4b32967d9a33c07b7ecc21a531766e",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 1.0282375628600307,
+        "ipo": 1.525763208098997,
+        "aot": 0.6070545851392997
+      }
+    },
+    {
+      "row_id": "25967ab91820f7e085eb3a8fd5ea3c9b",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -1.2027378346592588,
+        "ipo": -1.722186877987983,
+        "aot": -1.7799831753177364
+      }
+    },
+    {
+      "row_id": "6e4c6e404dd752701cf7dc4b1a67a725",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 1.1039304442005484,
+        "ipo": 1.2872968481624096,
+        "aot": 0.7822805505432884
+      }
+    },
+    {
+      "row_id": "22a536247d619e76a180ba2d88504877",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.3238780272543318,
+        "ipo": -0.5707998751583773,
+        "aot": -1.464199184395624
+      }
+    },
+    {
+      "row_id": "cb00f49b8913f644ec15dbd5df8ce2fb",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.27405092463410446,
+        "ipo": -0.7924787056155993,
+        "aot": 0.04075453739357977
+      }
+    },
+    {
+      "row_id": "8b0046f7cbe0b93a58009975bb4b7dcf",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -2.3320125751064973,
+        "ipo": -2.1678565892193884,
+        "aot": -2.125247564658246
+      }
+    },
+    {
+      "row_id": "9d56df70026bf314803b7ba0b4ea031d",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.9835066440959627,
+        "ipo": -1.8934129508715143,
+        "aot": -1.6744667877878436
+      }
+    },
+    {
+      "row_id": "0749d0d51cda0beeaff9ff6082b70a16",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.842482529407023,
+        "ipo": -0.3476057898402895,
+        "aot": 0.2741346346625659
+      }
+    },
+    {
+      "row_id": "975c99581caca04899bdcf8c7f71c2e4",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 0.39216143427315925,
+        "ipo": 2.3444064325989586,
+        "aot": 1.8251305773098283
+      }
+    },
+    {
+      "row_id": "271696bce174fc5bf573ee5a9787293d",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -1.0587235150771062,
+        "ipo": -1.7599295595612354,
+        "aot": -1.972193802150831
+      }
+    },
+    {
+      "row_id": "7d475ccd20a681ac01c0e4cfb0a7b708",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.9302424697145384,
+        "ipo": -1.4193566522602739,
+        "aot": -0.30258984359659624
+      }
+    },
+    {
+      "row_id": "f5aff9104c315205a48037263fcdd1e4",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -0.10672408554544838,
+        "ipo": 0.07083356586119022,
+        "aot": -0.13699737811923202
+      }
+    },
+    {
+      "row_id": "3fe961bebcb5fb5b2928b77b1eb0f6ab",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.1698936365909969,
+        "ipo": -1.2891406390485578,
+        "aot": -0.5500997286141546
+      }
+    },
+    {
+      "row_id": "2d5dc9c7986e8f895acd675ddd1d4395",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -0.5002762430939226,
+        "ipo": -1.7521575484743073,
+        "aot": -1.3855551628418419
+      }
+    },
+    {
+      "row_id": "833c5a51064cb59fce6d0b9ab646d2e5",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.7947142801040898,
+        "ipo": -1.0899707118246098,
+        "aot": 3.4540002025575993
+      }
+    },
+    {
+      "row_id": "a5c076a348fb9d1d074a2e6326c95bca",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.2732270526009015,
+        "ipo": -1.7752487014611016,
+        "aot": -0.9247506784646135
+      }
+    },
+    {
+      "row_id": "4cc79a664ffbaeee999c45f4839b6942",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 1.0714024323447282,
+        "ipo": -0.18668792229642445,
+        "aot": 1.5079426865338468
+      }
+    },
+    {
+      "row_id": "83d1446640f03e5a3c2115534c7d04b3",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -1.161675275364655,
+        "ipo": -1.40100534710725,
+        "aot": -1.6488916172157424
+      }
+    },
+    {
+      "row_id": "e14039411b0e0af502cc97f43b594079",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -0.7324123163288294,
+        "ipo": -0.8740170272398632,
+        "aot": -0.8372278132253577
+      }
+    },
+    {
+      "row_id": "bcb4101e4a2ea6f7cfe3101e5f3b74e8",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 0.3158744184219936,
+        "ipo": 0.6369828838828224,
+        "aot": -1.5361852616610137
+      }
+    },
+    {
+      "row_id": "e9eb32363807ef64528abde02acbdb36",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 1.1072825657847143,
+        "ipo": 1.3718527096212791,
+        "aot": 2.2662218796311797
+      }
+    },
+    {
+      "row_id": "f2752107b9d6cc4d3b89668073eb0421",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.2287230810251066,
+        "ipo": 1.1792097359930385,
+        "aot": -1.8164923224468956
+      }
+    },
+    {
+      "row_id": "eeff19dc7fee67c444f4806748a3d10e",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -0.582580873188608,
+        "ipo": 1.4151410255615289,
+        "aot": -0.2723568816877595
+      }
+    },
+    {
+      "row_id": "fa076e7a8e4505d89f6340212fae187d",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.8808031202138016,
+        "ipo": -0.5863010088608616,
+        "aot": 0.21553802812243575
+      }
+    },
+    {
+      "row_id": "2760567bb6c8a4d853285692cbfd2f94",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.36657572243821474,
+        "ipo": 0.2517830494426565,
+        "aot": -1.3235233447633692
+      }
+    },
+    {
+      "row_id": "1c9b6229ae73306dacfc5a2c351c93a0",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 1.3795738229439887,
+        "ipo": 1.6096549788800114,
+        "aot": -0.7614797452734837
+      }
+    },
+    {
+      "row_id": "e32cdf1a5ffab6e3631742123364b562",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.350709468327639,
+        "ipo": 0.1939524154993768,
+        "aot": -0.9273967421297071
+      }
+    },
+    {
+      "row_id": "f9c7700b5b53d2125bae3fbd0e71c239",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 1.628857792163501,
+        "ipo": 2.6634145837337977,
+        "aot": 2.7022882808027067
+      }
+    },
+    {
+      "row_id": "69e625e3ef8f83dd841aa09dfd418753",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.2575528148272161,
+        "ipo": 1.0653109775884484,
+        "aot": -0.3037420449636533
+      }
+    },
+    {
+      "row_id": "a7d22696de796b661a16850b27858817",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.7066412022827001,
+        "ipo": -0.7547246560137904,
+        "aot": -0.49797359723694895
+      }
+    },
+    {
+      "row_id": "92356d4dd0c691d75fef2e09523e4ddb",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.6897256791363604,
+        "ipo": 0.6127842782231978,
+        "aot": 2.2362793765036804
+      }
+    },
+    {
+      "row_id": "d7f25710d505b3dfd01aaead3d259eb1",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.917938387352138,
+        "ipo": 0.7487845510558832,
+        "aot": 1.8600780156796117
+      }
+    },
+    {
+      "row_id": "42afeaf2b68ece05db8bf5548d889309",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.993432586557203,
+        "ipo": -1.057248565044759,
+        "aot": -1.73542711750201
+      }
+    },
+    {
+      "row_id": "b330d0bb92ccaffcfcf8065391fbe54a",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 2.442660981618931,
+        "ipo": 2.9649801162845972,
+        "aot": 2.997540682040375
+      }
+    },
+    {
+      "row_id": "b689c4be6c6e0111b2d48b57de8d6737",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.4300355715948103,
+        "ipo": 0.09480026373826253,
+        "aot": -1.9216784170743653
+      }
+    },
+    {
+      "row_id": "e71da4b9bdcf3ecef6a644b52e6c899b",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.1861396862010736,
+        "ipo": -1.3856386661788749,
+        "aot": 1.600547473920709
+      }
+    },
+    {
+      "row_id": "a340b147d7186b7dc434f5a69f291fbb",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.5312328995138618,
+        "ipo": -2.0332425957963096,
+        "aot": -1.1233827945921253
+      }
+    },
+    {
+      "row_id": "a6ffc403c6857f5a121af493b61be92f",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.3030902306262957,
+        "ipo": -2.300015915239979,
+        "aot": -1.1825234129715405
+      }
+    },
+    {
+      "row_id": "0989063d1838214242d560b0ebf120b9",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -1.2961164747536755,
+        "ipo": -1.6925981732611568,
+        "aot": -1.811055924499755
+      }
+    },
+    {
+      "row_id": "3a8f485841534671ffcd403c338ab1ac",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 0.34120021578585114,
+        "ipo": -0.8459284888996368,
+        "aot": 0.43728000281100343
+      }
+    },
+    {
+      "row_id": "ccb82a858a6fd7164eb8074850b02699",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 1.55357710520387,
+        "ipo": 2.608461533691736,
+        "aot": 2.6392333401541506
+      }
+    },
+    {
+      "row_id": "5e3cb5346ab571346065a042d8d639b6",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -1.1408469801348868,
+        "ipo": -1.2784346431369142,
+        "aot": -1.6850803926310371
+      }
+    },
+    {
+      "row_id": "fe73a807527385b5baf932858a1e65e9",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.43157847143421113,
+        "ipo": -1.78174666658399,
+        "aot": -0.25298198890893797
+      }
+    },
+    {
+      "row_id": "0e8200b44e4d3cb7913bb8604ba90e3d",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 0.38668783186892447,
+        "ipo": 0.8666652198266686,
+        "aot": 2.117798405582322
+      }
+    },
+    {
+      "row_id": "86ebfb46f4d106c977bf7f897d333655",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.3757257452776175,
+        "ipo": -1.307168678807721,
+        "aot": -1.4768164559447556
+      }
+    },
+    {
+      "row_id": "a6be4e43fb292354f1665c6d8d569ed7",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.6234740488577198,
+        "ipo": 1.2973416898677792,
+        "aot": 1.651306083135426
+      }
+    },
+    {
+      "row_id": "42e963c1ec950ad6c56e05c1be86a361",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 2.3036949451544295,
+        "ipo": 1.0895732442079895,
+        "aot": 2.7543198508514655
+      }
+    },
+    {
+      "row_id": "c394871e8501f25ddf4888d89a23da1b",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 0.5423155227329567,
+        "ipo": 2.329625289109635,
+        "aot": 1.405942688600761
+      }
+    },
+    {
+      "row_id": "94e77c20f8749c29b6254e7e4560475c",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 2.042323325334375,
+        "ipo": -0.26732366120794604,
+        "aot": 0.7991850156982141
+      }
+    },
+    {
+      "row_id": "47a7ecce59f1a050e95838ecbeb90eb5",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.8543380396971557,
+        "ipo": -0.35756997021576514,
+        "aot": -0.000948119418039621
+      }
+    },
+    {
+      "row_id": "cdb135b559a2417bb62818ec146386da",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.693345776157317,
+        "ipo": -1.6191863385233551,
+        "aot": -0.4792535545758382
+      }
+    },
+    {
+      "row_id": "96e0b44a6706a1c28648f1d5dff3b664",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 0.9231650451724116,
+        "ipo": 0.7598749930241643,
+        "aot": 1.4182331293288937
+      }
+    },
+    {
+      "row_id": "a1f8cf6d5b3f07b7f250ffc588665e64",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 0.4373547734351908,
+        "ipo": -0.5572704743361587,
+        "aot": 0.8241966420910558
+      }
+    },
+    {
+      "row_id": "d48c999fe29b2d3a707a10d4ef9fe185",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 0.9735366763604947,
+        "ipo": 0.6729256964984405,
+        "aot": 1.427183023192845
+      }
+    },
+    {
+      "row_id": "3d4cef3f45d08cbffbea072db8eab546",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.494640697955615,
+        "ipo": -1.4530031231074814,
+        "aot": -1.0276288566036877
+      }
+    },
+    {
+      "row_id": "95246d0da624030daa7dbf409094399c",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 2.3134353820587705,
+        "ipo": -0.8902757883727803,
+        "aot": 2.1155889517230833
+      }
+    },
+    {
+      "row_id": "c5588a10041a7a0a12922ed449995e06",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 0.9909282098662086,
+        "ipo": 1.9262302790540975,
+        "aot": 0.939133094811425
+      }
+    },
+    {
+      "row_id": "d9fcc70aff5bdc719300ea99ff08d77d",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -0.6734351908691995,
+        "ipo": -1.1805373150370082,
+        "aot": -0.7277011986035926
+      }
+    },
+    {
+      "row_id": "f4b51207e17d94eae756a9b22e3ef8a5",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.8809300287507776,
+        "ipo": -0.3521821447542749,
+        "aot": 0.46157668355335635
+      }
+    },
+    {
+      "row_id": "965cff7ea2f8978ff76806922db048fb",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": -1.4505348140707257,
+        "ipo": 0.7196499473970315,
+        "aot": -1.1704092283588907
+      }
+    },
+    {
+      "row_id": "5102ddb2466f4ae8354a5626dae0fa41",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 2.223576877843299,
+        "ipo": 1.298872808295767,
+        "aot": -1.210600789974639
+      }
+    },
+    {
+      "row_id": "0edcb504593ef050afbdce6f097d23ee",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -1.0169575848519985,
+        "ipo": -4.778404879571239,
+        "aot": -1.6645542802694429
+      }
+    },
+    {
+      "row_id": "9525d388e69c6dd9aac39f6f957b2351",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 1.609790766267132,
+        "ipo": -0.9712959345862966,
+        "aot": 2.1832697498827027
+      }
+    },
+    {
+      "row_id": "bcc0c2789ea62c93d3555546d7964047",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.6157040013393604,
+        "ipo": -2.5053030819758875,
+        "aot": 0.4188275222038266
+      }
+    },
+    {
+      "row_id": "5c080a079f8f834477d4aeec564c4262",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -0.9148069605405393,
+        "ipo": -1.0262035125141324,
+        "aot": -1.4313761721987628
+      }
+    },
+    {
+      "row_id": "05fefa4040baa1e0438ed26e0dc48049",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": -1.0329416530767053,
+        "ipo": -1.9812501937732139,
+        "aot": -1.5896145824936492
+      }
+    },
+    {
+      "row_id": "75d55230aaabd2a5e3e2c97a0802ede3",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 0.056772968068241225,
+        "ipo": 0.822730269752983,
+        "aot": 1.0997579126646038
+      }
+    },
+    {
+      "row_id": "6de18844b7cda332deaa4dae54a52aae",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.5050182611876903,
+        "ipo": 1.5052743001944966,
+        "aot": 1.9037555832522068
+      }
+    },
+    {
+      "row_id": "72633456c6b344b76d352d90f14fd712",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": 1.6428470297408293,
+        "ipo": 2.981895897795222,
+        "aot": 3.143628426685517
+      }
+    },
+    {
+      "row_id": "1618f6fa0e4706b6fe806d68bd9a2e39",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.3091566369651084,
+        "ipo": -1.7875290659821044,
+        "aot": -1.1457162168027728
+      }
+    },
+    {
+      "row_id": "19f31d1af80712389fa4e4f41e2a591b",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -1.2652082519485832,
+        "ipo": -0.8916451190852663,
+        "aot": -0.5381370488184485
+      }
+    },
+    {
+      "row_id": "65621c78429165058bd31aa03f36b19c",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 2.3451589767120766,
+        "ipo": 3.3579012965753297,
+        "aot": 1.9885326303757855
+      }
+    },
+    {
+      "row_id": "3c1bacd59387ac3283ab319590f19ddc",
+      "selected_candidate": "aot",
+      "scores": {
+        "dpo": -0.977791832794902,
+        "ipo": 0.040975128820432666,
+        "aot": 0.894873019121024
+      }
+    },
+    {
+      "row_id": "84710b94ce6423541b298c98c8b0e6af",
+      "selected_candidate": "ipo",
+      "scores": {
+        "dpo": 1.4515252793951383,
+        "ipo": 1.875108874709857,
+        "aot": 1.497500687248999
+      }
+    },
+    {
+      "row_id": "c3465fff9f2b9e71dcf3f7b2ed507723",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 0.9174962227141478,
+        "ipo": -1.2794021657127859,
+        "aot": -0.7409474321690404
+      }
+    },
+    {
+      "row_id": "cdff93709322e03b324aa003321a2f68",
+      "selected_candidate": "dpo",
+      "scores": {
+        "dpo": 1.1131768885912532,
+        "ipo": -1.7905351861152965,
+        "aot": -1.3075936363843055
+      }
+    }
+  ]
+}

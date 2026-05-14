@@ -267,7 +267,11 @@ def _build_reward_model_submission_entrypoint(*args: str) -> None:
     cmd = ["python", "-u", "-m", "llm_rl_final_proj.build_reward_model_submission", *normalized_args]
     _run_subprocess_with_periodic_volume_commits(cmd)
 
-
+def _part2_rm_rerank_entrypoint(*args: str) -> None:
+    normalized_args = _normalize_args(args)
+    cmd = ["python", "-u", "-m", "llm_rl_final_proj.part2_rm_rerank", *normalized_args]
+    _run_subprocess_with_periodic_volume_commits(cmd)
+    
 @app.function(
     volumes={VOLUME_PATH: volume},
     timeout=DEFAULT_TIMEOUT_SECONDS,
@@ -477,6 +481,18 @@ def judge_candidates_remote(*args: str) -> None:
 def build_reward_model_submission_remote(*args: str) -> None:
     _build_reward_model_submission_entrypoint(*args)
 
+@app.function(
+    volumes={VOLUME_PATH: volume},
+    timeout=DEFAULT_TIMEOUT_SECONDS,
+    env=gpu_env,
+    image=image,
+    secrets=function_secrets,
+    gpu="A100-40GB",
+    cpu=DEFAULT_CPU,
+    memory=DEFAULT_MEMORY_MB,
+)
+def part2_rm_rerank_remote(*args: str) -> None:
+    _part2_rm_rerank_entrypoint(*args)
 
 @app.local_entrypoint()
 def main(*args: str) -> None:

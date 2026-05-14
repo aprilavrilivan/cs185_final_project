@@ -1,0 +1,46 @@
+[
+  {
+    "file": "rank_grpo_seed1_step75.jsonl",
+    "rows": 128,
+    "keys": [
+      "generated_num_tokens",
+      "prompt_text",
+      "response_text",
+      "row_id"
+    ],
+    "sha256": "1fde9053114f9952a3955f2dd038184d41af7d95c39db1ac3e737c26855760d4"
+  },
+  {
+    "file": "rank_grpo_seed1_step100.jsonl",
+    "rows": 128,
+    "keys": [
+      "generated_num_tokens",
+      "prompt_text",
+      "response_text",
+      "row_id"
+    ],
+    "sha256": "e3005cf3aa7b87bf0683015eaa0c691cc92bb32745e2966b72b53b6a482de8bb"
+  },
+  {
+    "file": "rank_grpo_seed2_step75.jsonl",
+    "rows": 128,
+    "keys": [
+      "generated_num_tokens",
+      "prompt_text",
+      "response_text",
+      "row_id"
+    ],
+    "sha256": "0adaa29b0c2d2261840353d54bd4dca13764e1e4015287fef769dd44e19e3ab0"
+  },
+  {
+    "file": "rank_grpo_seed2_step100.jsonl",
+    "rows": 128,
+    "keys": [
+      "generated_num_tokens",
+      "prompt_text",
+      "response_text",
+      "row_id"
+    ],
+    "sha256": "440d00601abaa0560c937d1a67d177dab54247065be0567df34c5af70147d5ea"
+  }
+]

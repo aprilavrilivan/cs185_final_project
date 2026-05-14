@@ -1,0 +1,9 @@
+seed	step	eval	online	status	usable	file	output
+1	75	1	0.5833	failed	36	seed1_step75_eval1.json	online=0.5833 (threshold 0.7500, usable=36)
+1	100	1	0.6327	failed	49	seed1_step100_eval1.json	online=0.6327 (threshold 0.7500, usable=49)
+1	100	2	0.6087	failed	46	seed1_step100_eval2.json	online=0.6087 (threshold 0.7500, usable=46)
+1	100	3	0.6667	failed	42	seed1_step100_eval3.json	online=0.6667 (threshold 0.7500, usable=42)
+2	75	1	0.7021	failed	47	seed2_step75_eval1.json	online=0.7021 (threshold 0.7500, usable=47)
+2	100	1	0.7258	failed	62	seed2_step100_eval1.json	online=0.7258 (threshold 0.7500, usable=62)
+2	100	2	0.7636	passed	55	seed2_step100_eval2.json	online=0.7636 (threshold 0.7500, usable=55)
+2	100	3	0.7705	passed	61	seed2_step100_eval3.json	online=0.7705 (threshold 0.7500, usable=61)

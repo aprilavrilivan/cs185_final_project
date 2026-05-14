@@ -60,12 +60,6 @@ class OnlineRMGRPOConfig:
     #   R = mean_i(z_i) - lambda * std_i(z_i)
     reward_ensemble_lambda: float = 0.0
 
-    # Resolved automatically in main().
-    # Single-RM mode: raw_single_reward.
-    # Ensemble mode: calibrated_mean_minus_lambda_calibrated_disagreement.
-    reward_formula: str = "raw_single_reward"
-    use_calibrated_ensemble: bool = False
-
     dataset_name: str = "HuggingFaceH4/ultrafeedback_binarized"
     train_split: str = "train_gen"
     eval_split: str = "test_gen"
@@ -531,10 +525,8 @@ def score_with_calibrated_pessimistic_ensemble(
 def save_checkpoint(model: torch.nn.Module, cfg: OnlineRMGRPOConfig, step: int) -> None:
     ckpt_dir = Path(cfg.output_dir) / "checkpoints" / f"step_{step:06d}"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
-
     adapter_dir = ckpt_dir / "adapter"
     model.save_pretrained(adapter_dir)
-
     meta = {
         "step": step,
         "model_type": "online_policy_rm_rl",
@@ -543,8 +535,6 @@ def save_checkpoint(model: torch.nn.Module, cfg: OnlineRMGRPOConfig, step: int) 
         "reward_model_name": cfg.reward_model_name,
         "reward_adapter_path": cfg.reward_adapter_path,
         "reward_adapter_paths": cfg.reward_adapter_paths,
-        "use_calibrated_ensemble": cfg.use_calibrated_ensemble,
-        "reward_formula": cfg.reward_formula,
         "reward_calibration_chosen_means": cfg.reward_calibration_chosen_means,
         "reward_calibration_rejected_means": cfg.reward_calibration_rejected_means,
         "reward_calibration_eps": cfg.reward_calibration_eps,
@@ -555,11 +545,7 @@ def save_checkpoint(model: torch.nn.Module, cfg: OnlineRMGRPOConfig, step: int) 
         "train_split": cfg.train_split,
         "eval_split": cfg.eval_split,
     }
-
-    (ckpt_dir / "meta.json").write_text(
-        json.dumps(meta, indent=2, sort_keys=True),
-        encoding="utf-8",
-    )
+    (ckpt_dir / "meta.json").write_text(json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8")
 
 
 @torch.no_grad()
@@ -676,50 +662,20 @@ def main() -> None:
         raise ValueError("--reward_ensemble_lambda must be non-negative.")
 
     reward_adapter_paths = _resolve_reward_adapter_paths(cfg)
+    chosen_means = _parse_csv_floats(cfg.reward_calibration_chosen_means, "--reward_calibration_chosen_means")
+    rejected_means = _parse_csv_floats(cfg.reward_calibration_rejected_means, "--reward_calibration_rejected_means")
 
-    # If --reward_adapter_paths is provided, use the calibrated ensemble path.
-    # If only --reward_adapter_path is provided, fall back to the Part 1 raw single-RM setup.
-    cfg.use_calibrated_ensemble = bool(cfg.reward_adapter_paths.strip())
-
-    if cfg.use_calibrated_ensemble:
-        chosen_means = _parse_csv_floats(
-            cfg.reward_calibration_chosen_means,
-            "--reward_calibration_chosen_means",
-        )
-        rejected_means = _parse_csv_floats(
-            cfg.reward_calibration_rejected_means,
-            "--reward_calibration_rejected_means",
+    if len(reward_adapter_paths) != len(chosen_means) or len(reward_adapter_paths) != len(rejected_means):
+        raise ValueError(
+            f"Length mismatch: reward_adapter_paths={len(reward_adapter_paths)}, "
+            f"chosen_means={len(chosen_means)}, rejected_means={len(rejected_means)}"
         )
 
-        if len(reward_adapter_paths) != len(chosen_means) or len(reward_adapter_paths) != len(rejected_means):
-            raise ValueError(
-                f"Length mismatch: reward_adapter_paths={len(reward_adapter_paths)}, "
-                f"chosen_means={len(chosen_means)}, rejected_means={len(rejected_means)}"
-            )
-
-        calibration_centers, calibration_scales = _compute_calibration_params(
-            chosen_means,
-            rejected_means,
-            eps=cfg.reward_calibration_eps,
-        )
-
-        cfg.reward_formula = "calibrated_mean_minus_lambda_calibrated_disagreement"
-    else:
-        if len(reward_adapter_paths) != 1:
-            raise ValueError(
-                "Raw single-RM mode expects exactly one --reward_adapter_path. "
-                "Use --reward_adapter_paths plus calibration stats for ensemble mode."
-            )
-
-        chosen_means = []
-        rejected_means = []
-
-        # This makes score_with_calibrated_pessimistic_ensemble reduce exactly to raw single-RM reward:
-        # z = (r - 0) / 1 = r, and std over one model is 0.
-        calibration_centers = [0.0]
-        calibration_scales = [1.0]
-        cfg.reward_ensemble_lambda = 0.0
-        cfg.reward_formula = "raw_single_reward"
+    calibration_centers, calibration_scales = _compute_calibration_params(
+        chosen_means,
+        rejected_means,
+        eps=cfg.reward_calibration_eps,
+    )
 
     if cfg.wandb_name == OnlineRMGRPOConfig.wandb_name and cfg.algo != OnlineRMGRPOConfig.algo:
         cfg.wandb_name = f"rm_{cfg.algo}_calibrated_pessimistic"
@@ -734,19 +690,14 @@ def main() -> None:
     )
 
     calibration_meta = {
-        "use_calibrated_ensemble": cfg.use_calibrated_ensemble,
-        "reward_formula": cfg.reward_formula,
+        "reward_formula": "calibrated_mean_minus_lambda_calibrated_disagreement",
         "reward_adapter_paths": reward_adapter_paths,
         "chosen_means": chosen_means,
         "rejected_means": rejected_means,
         "calibration_centers": calibration_centers,
         "calibration_scales": calibration_scales,
         "reward_ensemble_lambda": cfg.reward_ensemble_lambda,
-        "formula": (
-            "raw_single_reward: R=r"
-            if not cfg.use_calibrated_ensemble
-            else "z_i=(r_i-center_i)/scale_i; R=mean_i(z_i)-lambda*std_i(z_i)"
-        ),
+        "formula": "z_i=(r_i-center_i)/scale_i; R=mean_i(z_i)-lambda*std_i(z_i)",
     }
     (output_dir / "reward_calibration_meta.json").write_text(
         json.dumps(calibration_meta, indent=2, sort_keys=True),
@@ -759,9 +710,7 @@ def main() -> None:
     print(
         f"[setup] device={device} dtype={dtype} algo={cfg.algo} "
         f"policy={cfg.model_name} reward_model={cfg.reward_model_name} "
-        f"reward_formula={cfg.reward_formula} "
-        f"use_calibrated_ensemble={cfg.use_calibrated_ensemble} "
-        f"num_reward_models={len(reward_adapter_paths)} "
+        f"reward_formula=calibrated_pessimistic num_reward_models={len(reward_adapter_paths)} "
         f"lambda={cfg.reward_ensemble_lambda}"
     )
     print("[setup][calibration]", json.dumps(calibration_meta, indent=2, sort_keys=True))
@@ -831,11 +780,7 @@ def main() -> None:
             "setup/total_params": float(loaded_policy.total_params),
             "setup/trainable_fraction": float(loaded_policy.trainable_params / max(1, loaded_policy.total_params)),
             "setup/reward_ensemble_num_members": float(len(reward_models)),
-            "setup/use_calibrated_ensemble": float(cfg.use_calibrated_ensemble),
-            "setup/reward_formula_raw_single_reward": float(cfg.reward_formula == "raw_single_reward"),
-            "setup/reward_formula_calibrated_pessimistic": float(
-                cfg.reward_formula == "calibrated_mean_minus_lambda_calibrated_disagreement"
-            ),
+            "setup/reward_formula_calibrated_pessimistic": 1.0,
             "setup/reward_ensemble_lambda": float(cfg.reward_ensemble_lambda),
             "setup/advantage_mode_rank": 1.0 if cfg.advantage_mode == "rank" else 0.0,
             "setup/reward_calibration_eps": float(cfg.reward_calibration_eps),
