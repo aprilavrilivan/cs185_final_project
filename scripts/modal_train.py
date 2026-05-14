@@ -103,6 +103,7 @@ def _normalize_args(args: tuple[str, ...], *, default_output_dir: str | None = N
     normalized = _rewrite_path_flag(normalized, "--save_keep_row_ids_json")
     normalized = _rewrite_path_flag(normalized, "--save_recommended_jsonl")
     normalized = _rewrite_path_flag(normalized, "--summary_json")
+    normalized = _rewrite_path_flag(normalized, "--output_json")
     normalized = _rewrite_path_flag(normalized, "--output_jsonl")
     normalized = _rewrite_path_flag(normalized, "--input_jsonl", multi_value=True)
     normalized = _rewrite_path_flag(normalized, "--prompts_jsonl")
@@ -223,6 +224,18 @@ def _eval_entrypoint(*args: str) -> None:
 def _reward_model_eval_entrypoint(*args: str) -> None:
     normalized_args = _normalize_args(args)
     cmd = ["python", "-u", "-m", "llm_rl_final_proj.reward_model.eval", *normalized_args]
+    _run_subprocess_with_periodic_volume_commits(cmd)
+
+
+def _reward_ensemble_prefs_eval_entrypoint(*args: str) -> None:
+    normalized_args = _normalize_args(args)
+    cmd = [
+        "python",
+        "-u",
+        "-m",
+        "llm_rl_final_proj.reward_model.eval_calibrated_ensemble_prefs",
+        *normalized_args,
+    ]
     _run_subprocess_with_periodic_volume_commits(cmd)
 
 
@@ -351,6 +364,20 @@ def eval_remote(*args: str) -> None:
 )
 def reward_model_eval_remote(*args: str) -> None:
     _reward_model_eval_entrypoint(*args)
+
+
+@app.function(
+    volumes={VOLUME_PATH: volume},
+    timeout=6 * 60 * 60,
+    env=gpu_env,
+    image=image,
+    secrets=function_secrets,
+    gpu=DEFAULT_GPU,
+    cpu=4.0,
+    memory=32768,
+)
+def reward_ensemble_prefs_eval_remote(*args: str) -> None:
+    _reward_ensemble_prefs_eval_entrypoint(*args)
 
 
 @app.function(
