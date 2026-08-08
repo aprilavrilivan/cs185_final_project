@@ -22,3 +22,10 @@
 
 Method A train-calibrated reranking passed Part 2 offline:
 `offline=0.8636`, threshold `0.8300`.
+
+## Portfolio snapshot
+
+Raw candidate responses, per-example reward scores, detailed judge outputs, and debug
+metadata are intentionally excluded. Aggregate summaries, calibration metadata, and
+reproduction scripts are retained. The three preserved local evaluation values are
+`0.8636`, `0.8621`, and `0.8571`, with mean `0.8609`.

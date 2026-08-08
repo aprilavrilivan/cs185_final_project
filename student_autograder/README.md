@@ -1,5 +1,9 @@
 # Student Local Autograder
 
+> **Portfolio snapshot note.** Raw evaluation prompts, responses, preference pairs,
+> and generated submission files are not distributed here. This harness is retained
+> as implementation context but requires separately authorized evaluation assets.
+
 This directory contains the local GPT-5.4 evaluation script used for development.
 
 ## Usage

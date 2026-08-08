@@ -1,5 +1,11 @@
 # README for Experiment Reproduction
 
+> **Portfolio snapshot note.** This file preserves the original experiment commands.
+> The raw dataset, evaluation JSONLs, generated submissions, and checkpoints referenced
+> below are deliberately not distributed in this cleaned repository. Reproduction
+> therefore requires separately authorized access to those artifacts. Paths and commands
+> are historical records and may require adaptation in a new environment.
+
 This file records the commands used to reproduce our main Part 1 and Part 2 experiments. Before running these commands, upload the dataset to the Modal volume:
 
 ```bash
@@ -1112,4 +1118,3 @@ zip -r llm_rl_final_proj_public_submission.zip llm_rl_final_proj_public_submissi
 ```
 
 ---
-

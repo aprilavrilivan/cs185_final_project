@@ -45,17 +45,21 @@ This cleaned directory intentionally excludes the earlier/default B run. It only
 
 ## Files
 
-- `candidates/`: deterministic public-eval JSONLs.
-- `autograder_results/`: clean local autograder results.
-- `candidate_manifest.json`: row counts and hashes for candidates.
+- `candidate_manifest.json`: row counts and hashes for omitted candidate files.
 - `reward_config/methodB_reward_config.json`: reward model and calibration configuration.
 - `methodB_results.tsv`: flat result table.
 - `methodB_summary.json`: structured result summary.
 - `methodB_summary_table.md`: report-ready table.
-- `code_snapshot/`: snapshot/diff of the rank-advantage implementation.
+
+The portfolio snapshot omits candidate JSONLs, detailed autograder outputs, and a
+redundant code snapshot. The maintained implementation remains in
+`llm_rl_final_proj/online/train_rm_grpo.py` and related package modules.
 
 ## Interpretation
 
 If the seed1/seed2 rank-GRPO runs pass the online threshold but remain weaker than the original calibrated-ensemble GRPO online best, we treat Method B as a meaningful online ablation rather than the final online-best method.
 
 The main interpretation is that rank-only advantages reduce sensitivity to reward scale but may discard useful calibrated reward-magnitude information.
+
+The best preserved configuration is seed 2 at step 100. Its three repeated local
+evaluations have mean `0.7533`; two of the three individual evaluations exceed `0.75`.

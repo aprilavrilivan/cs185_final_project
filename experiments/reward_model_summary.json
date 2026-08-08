@@ -1,0 +1,6 @@
+{
+  "metric": "pair_accuracy",
+  "value": 0.84375,
+  "raw_evaluation_included": false,
+  "provenance": "Preserved original project result"
+}
